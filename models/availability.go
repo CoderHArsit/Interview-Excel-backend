@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+
 type AvailabilitySlot struct {
 	ID        uint      `gorm:"primaryKey"`
 	ExpertID  uint      `gorm:"not null;index"` // Foreign Key to Expert
