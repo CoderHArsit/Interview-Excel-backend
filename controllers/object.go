@@ -6,6 +6,12 @@ type ExpertSignUpRequest struct {
 	Password   string `json:"password" binding:"required,min=6"`
 	Phone      string `json:"phone" binding:"required"`
 	Expertise  string `json:"expertise" binding:"required"`  // e.g., UPSC, IT, Banking
-	Bio        string `json:"bio"`                            // optional
+	Bio        string `json:"bio"`                           // optional
 	Experience int    `json:"experience" binding:"required"` // in years
+}
+
+type ExpertSignInRequest struct {
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Password string `json:"password"`
 }
