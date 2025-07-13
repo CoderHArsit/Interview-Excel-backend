@@ -1,10 +1,12 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
 	"interviewexcel-backend-go/config"
 	"interviewexcel-backend-go/models"
+	"interviewexcel-backend-go/utils"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func ExpertSignUp(c *gin.Context) {
@@ -82,4 +84,25 @@ func ExpertSignin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"access_token": accessToken, "refresh_token": refreshToken})
+}
+
+
+func GenerateWeeklyAvailability(c *gin.Context) {
+	var input struct {
+		ExpertID uint `json:"expert_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	slots := utils.GenerateWeeklySlots(input.ExpertID)
+
+	if err := config.DB.Create(&slots).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create availability slots"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Availability slots created successfully"})
 }
