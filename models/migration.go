@@ -4,7 +4,7 @@ package models
 var modelsForMigration=[]interface{}{
 	&Expert{},
 	&User{},
-
+	&AvailabilitySlot{},
 }
 
 
