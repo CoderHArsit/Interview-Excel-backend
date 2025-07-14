@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/jinzhu/gorm"
+)
 
 type AvailabilitySlot struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
@@ -14,4 +18,50 @@ type AvailabilitySlot struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type availabilitySlotRepo struct {
+	DB *gorm.DB
+}
 
+func InitAvailabilitySlotRepo(db *gorm.DB) IAvailabilitySlotRepo {
+	return &availabilitySlotRepo{
+		DB: db,
+	}
+}
+
+// Get all slots for an expert
+func (r *availabilitySlotRepo) GetAllByExpert(expertID uint) ([]AvailabilitySlot, error) {
+	var slots []AvailabilitySlot
+	err := r.DB.Where("expert_id = ?", expertID).Find(&slots).Error
+	return slots, err
+}
+
+// Get all available (not booked) slots
+func (r *availabilitySlotRepo) GetAvailableByExpert(expertID uint) ([]AvailabilitySlot, error) {
+	var slots []AvailabilitySlot
+	err := r.DB.Where("expert_id = ? AND is_booked = false AND date >= ?", expertID, time.Now()).
+		Order("date ASC, start_time ASC").
+		Find(&slots).Error
+	return slots, err
+}
+
+// Get slot by ID
+func (r *availabilitySlotRepo) GetByID(id uint) (*AvailabilitySlot, error) {
+	var slot AvailabilitySlot
+	err := r.DB.First(&slot, id).Error
+	return &slot, err
+}
+
+// Mark slot as booked
+func (r *availabilitySlotRepo) MarkAsBooked(id uint) error {
+	return r.DB.Model(&AvailabilitySlot{}).Where("id = ?", id).Update("is_booked", true).Error
+}
+
+// Delete a slot
+func (r *availabilitySlotRepo) Delete(id uint) error {
+	return r.DB.Delete(&AvailabilitySlot{}, id).Error
+}
+
+// Update a slot (useful for admin panel or expert updates)
+func (r *availabilitySlotRepo) Update(slot *AvailabilitySlot) error {
+	return r.DB.Save(slot).Error
+}
