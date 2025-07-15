@@ -10,5 +10,5 @@ func RegisterExpertRoutes(router *gin.Engine) {
 	router.POST("/expert/signup", controllers.ExpertSignUp)
 	router.POST("/expert/sigin", controllers.ExpertSignin)
 	router.POST("/expert/generate-slots", controllers.GenerateWeeklyAvailability)
-
+	router.POST("/book-slot", controllers.BookSlot)
 }
