@@ -10,23 +10,24 @@ import (
 )
 
 // function to generate an access token
-func generateAccessToken(expertID uint) (string, error) {
+func generateAccessToken(userID uint, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": expertID,
-		"exp": time.Now().Add(time.Minute * 15).Unix(),
+		"sub":  userID,
+		"role": role,
+		"exp":  time.Now().Add(time.Minute * 15).Unix(),
 	})
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
 
 // Function to generate a refresh token
-func generateRefreshToken(expertID uint) (string, error) {
+func generateRefreshToken(userID uint, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": expertID,
-		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // 7-day expiration
+		"sub":  userID,
+		"role": role,
+		"exp":  time.Now().Add(time.Hour * 24 * 7).Unix(), // 7-day expiration
 	})
 	return token.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
 }
-
 
 // RefreshToken handles the creation of a new access token using a refresh token
 func RefreshToken(c *gin.Context) {
@@ -48,7 +49,8 @@ func RefreshToken(c *gin.Context) {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		expertID := uint(claims["sub"].(float32))
-		newAccessToken, err := generateAccessToken(expertID)
+		role := claims["role"].(string)
+		newAccessToken, err := generateAccessToken(expertID, role)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new access token"})
 			return
