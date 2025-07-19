@@ -17,7 +17,8 @@ func ExpertSignUp(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error binding request": err.Error()})
+		return
 	}
 
 	//Hash the password
@@ -71,13 +72,13 @@ func ExpertSignin(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := generateAccessToken(expert.ID)
+	accessToken, err := generateAccessToken(expert.ID, "expert")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get access token"})
 		return
 	}
 
-	refreshToken, err := generateRefreshToken(expert.ID)
+	refreshToken, err := generateRefreshToken(expert.ID, "expert")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get refresh token"})
 		return
@@ -86,10 +87,9 @@ func ExpertSignin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": accessToken, "refresh_token": refreshToken})
 }
 
-
 func GenerateWeeklyAvailability(c *gin.Context) {
 	var input struct {
-		ExpertID uint `json:"expert_id" binding:"required"`
+		ExpertID uint `json:"expert_id" binding:"required"` //TODO - remove this api, expert id should be extracted from the logged in expert token
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {

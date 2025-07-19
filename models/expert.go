@@ -9,9 +9,9 @@ import (
 type Expert struct {
 	ID                uint      `gorm:"primaryKey" json:"id"`
 	FullName          string    `gorm:"not null" json:"full_name"`
-	Email             string    `gorm:"unique;not null" json:"email"`
+	Email             string    `json:"email"`
 	Password          string    `gorm:"not null" json:"-"`
-	Phone             string    `json:"phone,omitempty"`
+	Phone             string    `json:"phone,omitempty" gorm:"unique;not null"`
 	Expertise         string    `gorm:"not null" json:"expertise"`
 	Bio               string    `json:"bio,omitempty"`
 	ExperienceYears   int       `gorm:"not null" json:"experience_years"`
