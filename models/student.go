@@ -12,6 +12,7 @@ type Student struct {
 	Email     string    `gorm:"not null;uniqueIndex" json:"email"`
 	Phone     string    `gorm:"not null;uniqueIndex" json:"phone"`
 	Password  string    `gorm:"not null" json:"-"` // stored as hashed
+	Bio       string    `json:"bio"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
