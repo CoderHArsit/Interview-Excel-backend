@@ -22,4 +22,6 @@ func InitRedis() {
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
+
+	log.Println("Redis connected successfully")
 }

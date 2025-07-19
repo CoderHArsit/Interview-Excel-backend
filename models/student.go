@@ -8,6 +8,7 @@ import (
 type Student struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	FullName  string    `gorm:"not null" json:"full_name"`
+	Picture   string    `json:"picture"`
 	Email     string    `gorm:"not null;uniqueIndex" json:"email"`
 	Phone     string    `gorm:"not null;uniqueIndex" json:"phone"`
 	Password  string    `gorm:"not null" json:"-"` // stored as hashed

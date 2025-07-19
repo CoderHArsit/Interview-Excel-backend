@@ -8,6 +8,7 @@ import (
 
 
 func GoogleLoginRoutes(router *gin.Engine){
-	router.GET("/google_login", controllers.GoogleLogin)
-    //app.Post("/google_callback", controllers.GoogleCallback)
+router.GET("/auth/google/login", controllers.GoogleLoginHandler)
+router.GET("/auth/google/callback", controllers.GoogleCallbackHandler)
+
 }

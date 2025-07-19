@@ -29,3 +29,8 @@ type StudentSignInRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
+
+type GoogleAuthRequest struct {
+	Code string `json:"code"`
+}
+
