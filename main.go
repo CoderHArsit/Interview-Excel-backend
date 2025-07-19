@@ -12,6 +12,7 @@ func main() {
 	r := gin.Default()
 	config.InitDB()
 	config.GoogleConfig()
+	config.InitRedis()
 
 	routes.RegisterExpertRoutes(r)
 	banner := `

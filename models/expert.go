@@ -10,6 +10,7 @@ type Expert struct {
 	ID                uint      `gorm:"primaryKey" json:"id"`
 	FullName          string    `gorm:"not null" json:"full_name"`
 	Email             string    `json:"email"`
+	Picture           string    `json:"picture"`
 	Password          string    `gorm:"not null" json:"-"`
 	Phone             string    `json:"phone,omitempty" gorm:"unique;not null"`
 	Expertise         string    `gorm:"not null" json:"expertise"`

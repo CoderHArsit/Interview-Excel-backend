@@ -20,7 +20,7 @@ type Config struct {
 
 var AppConfig Config
 
-func GoogleConfig() oauth2.Config {
+func GoogleConfig() *oauth2.Config {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Some error occured. Err: %s", err)
@@ -35,7 +35,7 @@ func GoogleConfig() oauth2.Config {
 	}
 
 	log.Println("This is correct")
-	return AppConfig.GoogleLoginConfig
+	return &AppConfig.GoogleLoginConfig
 }
 
 var DB *gorm.DB
