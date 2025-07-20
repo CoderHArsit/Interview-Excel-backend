@@ -66,3 +66,21 @@ func (r *availabilitySlotRepo) Delete(id uint) error {
 func (r *availabilitySlotRepo) Update(slot *AvailabilitySlot) error {
 	return r.DB.Save(slot).Error
 }
+
+func (r *availabilitySlotRepo) GetBookedByStudent(studentID uint) ([]AvailabilitySlot, error) {
+	var slots []AvailabilitySlot
+	err := r.DB.
+		Where("student_id = ? AND is_booked = true AND date >= ?", studentID, time.Now()).
+		Order("date ASC").
+		Find(&slots).Error
+	return slots, err
+}
+
+func (r *availabilitySlotRepo) GetBookedSlotsByExpert(expertID uint) ([]AvailabilitySlot, error) {
+	var slots []AvailabilitySlot
+	err := r.DB.
+		Where("expert_id = ? AND is_booked = true AND date >= ?", expertID, time.Now()).
+		Order("date ASC, start_time ASC").
+		Find(&slots).Error
+	return slots, err
+}

@@ -5,6 +5,7 @@ import (
 	"interviewexcel-backend-go/config"
 	"interviewexcel-backend-go/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -57,6 +58,39 @@ func UpdateStudentProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
+func GetAllExpertsHandler(c *gin.Context) {
+	var (
+		expertRepo = models.InitExpertRepo(config.DB)
+	)
+	experts, err := expertRepo.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch experts"})
+		return
+	}
+
+	c.JSON(http.StatusOK, experts)
+}
+
+func GetAvailableSlotsForExpertHandler(c *gin.Context) {
+	var (
+		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+	)
+	expertIDStr := c.Param("id")
+	expertID, err := strconv.Atoi(expertIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid expert id"})
+		return
+	}
+
+	slots, err := availabilityRepo.GetAvailableByExpert(uint(expertID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch slots"})
+		return
+	}
+
+	c.JSON(http.StatusOK, slots)
+}
+
 func BookAvailabilitySlotHandler(c *gin.Context) {
 	// Extract student ID from context
 	var (
@@ -97,4 +131,26 @@ func BookAvailabilitySlotHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "slot booked successfully", "slot": slot})
+}
+
+
+func GetStudentBookingsHandler(c *gin.Context) {
+	var(
+		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+	)
+	studentIDInterface, exists := c.Get("student_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	studentID := studentIDInterface.(uint)
+
+	slots, err := availabilityRepo.GetBookedByStudent(studentID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch bookings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, slots)
 }
