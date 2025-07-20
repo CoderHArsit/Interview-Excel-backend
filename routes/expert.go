@@ -2,14 +2,23 @@ package routes
 
 import (
 	"interviewexcel-backend-go/controllers"
+	"interviewexcel-backend-go/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterExpertRoutes(router *gin.Engine) {
+	// Public routes
 	router.POST("/expert/signup", controllers.ExpertSignUp)
 	router.POST("/expert/signin", controllers.ExpertSignin)
-	router.POST("/expert/generate-slots", controllers.GenerateWeeklyAvailability)
 	router.POST("/expert/google-auth", controllers.ExpertGoogleAuth)
-	router.POST("/book-slot", controllers.BookSlot)
+
+	// Protected routes
+	authexpertGroup := router.Group("/expert")
+	authexpertGroup.Use(middleware.AuthMiddleware()) // ✅ Apply middleware here
+
+	authexpertGroup.POST("/generate-slots", controllers.GenerateWeeklyAvailability)
+	// expertGroup.GET("/profile", controllers.GetExpertProfile)
+	authexpertGroup.GET("/my-slots", controllers.GetAvailableSlotsForExpertHandler)
+	// Add more protected expert routes here
 }

@@ -82,3 +82,11 @@ func (e *expertRepo) Delete(id uint64) error {
 	}
 	return nil
 }
+
+func (r *expertRepo) GetAll() ([]Expert, error) {
+	var experts []Expert
+	err := r.DB.Find(&experts).Error
+	return experts, err
+}
+
+
