@@ -13,6 +13,7 @@ func main() {
 	config.InitDB()
 	config.GoogleConfig()
 	config.InitRedis()
+	config.InitRazorpay()
 
 	routes.RegisterExpertRoutes(r)
 	banner := `

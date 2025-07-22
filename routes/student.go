@@ -17,5 +17,6 @@ func RegisterStudentRoutes(r *gin.Engine) {
 	studentRoutes.GET("/experts", controllers.GetAllExpertsHandler)
 	studentRoutes.GET("/expert/:id/slots", controllers.GetAvailableSlotsForExpertHandler)
 	studentRoutes.GET("/bookings", controllers.GetStudentBookingsHandler)
+	studentRoutes.POST("/preview-slot", controllers.PreviewSlotForPaymentHandler)
 
 }
