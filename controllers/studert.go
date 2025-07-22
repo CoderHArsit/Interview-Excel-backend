@@ -91,6 +91,59 @@ func GetAvailableSlotsForExpertHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, slots)
 }
 
+func PreviewSlotForPaymentHandler(c *gin.Context) {
+	var req struct {
+		SlotID uint `json:"slot_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	availabilityRepo := models.InitAvailabilitySlotRepo(config.DB)
+
+	// Get slot
+	slot, err := availabilityRepo.GetByID(req.SlotID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "slot not found"})
+		return
+	}
+
+	if slot.IsBooked {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slot already booked"})
+		return
+	}
+
+	// Get expert
+	expertRepo := models.InitExpertRepo(config.DB)
+	expert, err := expertRepo.GetByID(uint64(slot.ExpertID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "expert not found"})
+		return
+	}
+
+	// Platform fee logic
+	platformFee := int(0.2 * float64(expert.FeesPerSession)) // 10%
+	totalAmount := expert.FeesPerSession + platformFee
+
+	c.JSON(http.StatusOK, gin.H{
+		"expert": gin.H{
+			"name":             expert.FullName,
+			"domain":           expert.Expertise,
+			"profile_pic_url":  expert.Picture,
+			"fees_per_session": expert.FeesPerSession,
+		},
+		"slot": gin.H{
+			"slot_id":    slot.ID,
+			"day":        slot.Date,
+			"start_time": slot.StartTime,
+			"end_time":   slot.EndTime,
+		},
+		"platform_fee": platformFee,
+		"total_amount": totalAmount,
+	})
+}
+
 func BookAvailabilitySlotHandler(c *gin.Context) {
 	// Extract student ID from context
 	var (
@@ -133,9 +186,8 @@ func BookAvailabilitySlotHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "slot booked successfully", "slot": slot})
 }
 
-
 func GetStudentBookingsHandler(c *gin.Context) {
-	var(
+	var (
 		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
 	)
 	studentIDInterface, exists := c.Get("student_id")

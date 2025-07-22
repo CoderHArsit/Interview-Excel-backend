@@ -12,7 +12,11 @@ import (
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"github.com/razorpay/razorpay-go"
+
 )
+
+var RazorpayClient *razorpay.Client
 
 type Config struct {
 	GoogleLoginConfig oauth2.Config
@@ -67,4 +71,22 @@ func InitDB() {
 
 	DB = db
 	log.Println("Database connected successfully")
+}
+
+
+func InitRazorpay() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file for Razorpay")
+	}
+
+	key := os.Getenv("RAZORPAY_KEY")
+	secret := os.Getenv("RAZORPAY_SECRET")
+
+	if key == "" || secret == "" {
+		log.Fatal("Missing Razorpay credentials in .env")
+	}
+
+	RazorpayClient = razorpay.NewClient(key, secret)
+	log.Println("Razorpay client initialized")
 }

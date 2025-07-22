@@ -10,6 +10,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/razorpay/razorpay-go v1.4.0
 	golang.org/x/crypto v0.31.0
 	golang.org/x/oauth2 v0.23.0
 	gorm.io/driver/postgres v1.6.0

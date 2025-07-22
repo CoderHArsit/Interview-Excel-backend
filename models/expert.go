@@ -7,18 +7,20 @@ import (
 )
 
 type Expert struct {
-	ID                uint      `gorm:"primaryKey" json:"id"`
-	FullName          string    `gorm:"not null" json:"full_name"`
-	Email             string    `json:"email"`
-	Picture           string    `json:"picture"`
-	Password          string    `gorm:"not null" json:"-"`
-	Phone             string    `json:"phone,omitempty" gorm:"unique;not null"`
-	Expertise         string    `gorm:"not null" json:"expertise"`
-	Bio               string    `json:"bio,omitempty"`
-	ExperienceYears   int       `gorm:"not null" json:"experience_years"`
-	ProfilePictureUrl string    `json:"profile_picture_url,omitempty"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	FullName          string `gorm:"not null" json:"full_name"`
+	Email             string `json:"email"`
+	Picture           string `json:"picture"`
+	Password          string `gorm:"not null" json:"-"`
+	Phone             string `json:"phone,omitempty" gorm:"unique;not null"`
+	Expertise         string `gorm:"not null" json:"expertise"`
+	Bio               string `json:"bio,omitempty"`
+	ExperienceYears   int    `gorm:"not null" json:"experience_years"`
+	ProfilePictureUrl string `json:"profile_picture_url,omitempty"`
+	FeesPerSession    int    `gorm:"not null" json:"fees_per_session"`
 }
 type expertRepo struct {
 	DB *gorm.DB
@@ -88,5 +90,3 @@ func (r *expertRepo) GetAll() ([]Expert, error) {
 	err := r.DB.Find(&experts).Error
 	return experts, err
 }
-
-
