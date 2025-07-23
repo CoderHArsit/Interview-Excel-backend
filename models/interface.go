@@ -24,3 +24,13 @@ type IAvailabilitySlotRepo interface {
 	GetBookedByStudent(studentID uint) ([]AvailabilitySlot, error)
 	GetBookedSlotsByExpert(expertID uint) ([]AvailabilitySlot, error)
 }
+
+type IPaymentRepo interface {
+	Create(payment *Payment) error
+	GetByOrderID(orderID string) (*Payment, error)
+}
+
+type IStudent interface {
+	Create(student *Student) error
+	GetByEmail(email string) (*Student, error)	
+}

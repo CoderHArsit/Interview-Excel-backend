@@ -5,6 +5,8 @@ var modelsForMigration=[]interface{}{
 	&Expert{},
 	&User{},
 	&AvailabilitySlot{},
+	&Payment{},
+	&Student{},
 }
 
 
