@@ -7,20 +7,15 @@ import (
 )
 
 type Expert struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-
-	FullName          string `gorm:"not null" json:"full_name"`
-	Email             string `json:"email"`
-	Picture           string `json:"picture"`
-	Password          string `gorm:"not null" json:"-"`
-	Phone             string `json:"phone,omitempty" gorm:"unique;not null"`
-	Expertise         string `gorm:"not null" json:"expertise"`
-	Bio               string `json:"bio,omitempty"`
-	ExperienceYears   int    `gorm:"not null" json:"experience_years"`
-	ProfilePictureUrl string `json:"profile_picture_url,omitempty"`
-	FeesPerSession    int    `gorm:"not null" json:"fees_per_session"`
+	ID                uint      `gorm:"primaryKey" json:"id"`
+	UserID            uint      `gorm:"uniqueIndex" json:"user_id"` // 1-to-1 with User
+	Bio               string    `json:"bio,omitempty"`
+	Expertise         string    `gorm:"not null" json:"expertise"`
+	ExperienceYears   int       `gorm:"not null" json:"experience_years"`
+	ProfilePictureUrl string    `json:"profile_picture_url,omitempty"`
+	FeesPerSession    int       `gorm:"not null" json:"fees_per_session"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 type expertRepo struct {
 	DB *gorm.DB

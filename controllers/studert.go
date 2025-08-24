@@ -47,9 +47,9 @@ func UpdateStudentProfile(c *gin.Context) {
 	if err := config.DB.Model(&models.Student{}).
 		Where("id = ?", studentID).
 		Updates(models.Student{
-			FullName: input.Name,
+			
 			Bio:      input.Bio,
-			Picture:  input.ProfileImage,
+			
 		}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 		return
@@ -128,9 +128,7 @@ func PreviewSlotForPaymentHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"expert": gin.H{
-			"name":             expert.FullName,
 			"domain":           expert.Expertise,
-			"profile_pic_url":  expert.Picture,
 			"fees_per_session": expert.FeesPerSession,
 		},
 		"slot": gin.H{

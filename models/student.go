@@ -7,12 +7,8 @@ import (
 
 type Student struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	FullName  string    `gorm:"not null" json:"full_name"`
-	Picture   string    `json:"picture"`
-	Email     string    `gorm:"not null;uniqueIndex" json:"email"`
-	Phone     string    `gorm:"not null;uniqueIndex" json:"phone"`
-	Password  string    `gorm:"not null" json:"-"` // stored as hashed
-	Bio       string    `json:"bio"`
+	UserID    uint      `gorm:"uniqueIndex" json:"user_id"` // 1-to-1 with User
+	Bio       string    `json:"bio,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
