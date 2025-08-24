@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"interviewexcel-backend-go/config"
 	"io"
 	"net/http"
@@ -20,6 +21,7 @@ type GoogleUser struct {
 }
 
 func GoogleLoginHandler(c *gin.Context) {
+	fmt.Print("i am here")
 	url := config.GoogleConfig().AuthCodeURL("random-state", oauth2.AccessTypeOffline)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }

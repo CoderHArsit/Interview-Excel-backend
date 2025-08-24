@@ -6,9 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
-func GoogleLoginRoutes(router *gin.Engine){
-router.GET("/auth/google/login", controllers.GoogleLoginHandler)
-router.GET("/auth/google/callback", controllers.GoogleCallbackHandler)
-
+func GoogleLoginRoutes(router *gin.Engine) {
+	router.POST("/auth/google/login", controllers.UserGoogleAuth)
+	router.GET("/auth/google/callback", controllers.GoogleCallbackHandler)
 }

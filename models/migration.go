@@ -2,8 +2,8 @@ package models
 
 
 var modelsForMigration=[]interface{}{
-	&Expert{},
 	&User{},
+	&Expert{},
 	&AvailabilitySlot{},
 	&Payment{},
 	&Student{},

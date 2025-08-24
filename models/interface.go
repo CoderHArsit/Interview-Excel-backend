@@ -32,5 +32,15 @@ type IPaymentRepo interface {
 
 type IStudent interface {
 	Create(student *Student) error
-	GetByEmail(email string) (*Student, error)	
+	GetByEmail(email string) (*Student, error)
+}
+
+type IUser interface {
+	InitUserRepo(db *gorm.DB) *UserRepo
+	Create(user *User) error
+	FindByID(id uint) (*User, error)
+	FindByEmail(email string) (*User, error)
+	Update(user *User) error
+	Delete(id uint) error
+	ListAll() ([]User, error)
 }
