@@ -21,7 +21,7 @@ func main() {
 
 	// Apply CORS middleware
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // frontend origin
+		AllowOrigins:     []string{"http://localhost:3010"}, // frontend origin
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -32,7 +32,7 @@ func main() {
 	// Register routes
 	routes.RegisterExpertRoutes(r)
 	routes.RegisterStudentRoutes(r)
-	routes.GoogleLoginRoutes(r)
+	routes.AuthRoutes(r)
 
 	// Banner
 	banner := `
