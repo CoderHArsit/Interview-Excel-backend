@@ -3,8 +3,8 @@ package controllers
 import (
 	"interviewexcel-backend-go/config"
 	"interviewexcel-backend-go/models"
-	"interviewexcel-backend-go/utils"
-
+	logger "interviewexcel-backend-go/pkg/errors"
+	utils "interviewexcel-backend-go/utils"
 	"net/http"
 	"time"
 
@@ -16,6 +16,7 @@ func Signup(c *gin.Context) {
 	var req SignUpRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Errorf("Error binding JSON: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
@@ -23,6 +24,7 @@ func Signup(c *gin.Context) {
 	// check if user already exists
 	var existing models.User
 	if err := config.DB.Where("email = ?", req.Email).First(&existing).Error; err == nil {
+		logger.Errorf("User already exists: %v\n", existing.Email)
 		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
 		return
 	}
@@ -42,24 +44,44 @@ func Signup(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
+		logger.Errorf("Error creating user: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
+	}
+
+	// 🔹 Create respective profile
+	switch req.Role {
+	case "student":
+		student := models.Student{UserID: user.ID}
+		if err := config.DB.Create(&student).Error; err != nil {
+			logger.Errorf("Error creating student profile: %v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create student profile"})
+			return
+		}
+	case "expert":
+		expert := models.Expert{UserID: user.ID}
+		if err := config.DB.Create(&expert).Error; err != nil {
+			logger.Errorf("Error creating expert profile: %v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create expert profile"})
+			return
+		}
 	}
 
 	// 🔹 Generate tokens
 	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role)
 	if err != nil {
+		logger.Errorf("Error generating access token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
 	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.Role)
 	if err != nil {
+		logger.Errorf("Error generating refresh token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
 		return
 	}
 
-	// optionally save refresh token in DB/Redis
 	// Save refresh token in Redis
 	err = config.RedisClient.Set(
 		config.Ctx,
@@ -69,6 +91,7 @@ func Signup(c *gin.Context) {
 	).Err()
 
 	if err != nil {
+		logger.Errorf("Error saving refresh token to Redis: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save refresh token"})
 		return
 	}
@@ -175,29 +198,34 @@ func UserGoogleAuth(c *gin.Context) {
 func UserSignIn(c *gin.Context) {
 	var req SignInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Errorf("Error binding JSON: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var user models.User
 	if err := config.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		logger.Errorf("User not found: %v\n", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
 	if user.Password == nil || utils.VerifyPassword(*user.Password, req.Password) != nil {
+		logger.Errorf("Invalid password for user: %s\n", req.Email)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
 	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role)
 	if err != nil {
+		logger.Errorf("Error generating access token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
 	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.Role)
 	if err != nil {
+		logger.Errorf("Error generating refresh token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
 		return
 	}
