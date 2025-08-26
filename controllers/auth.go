@@ -82,6 +82,16 @@ func Signup(c *gin.Context) {
 		return
 	}
 
+	c.SetCookie(
+		"refresh_token", // cookie name
+		refreshToken,    // value
+		7*24*60*60,      // maxAge in seconds
+		"/",             // path: available to all endpoints
+		"localhost",     // domain: only hostname
+		false,           // secure: false for http in dev
+		true,            // httpOnly: true is fine
+	)
+
 	// Save refresh token in Redis
 	err = config.RedisClient.Set(
 		config.Ctx,
@@ -97,9 +107,8 @@ func Signup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"user":          user,
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+		"user":         user,
+		"access_token": accessToken,
 	})
 }
 
@@ -181,10 +190,19 @@ func UserGoogleAuth(c *gin.Context) {
 		return
 	}
 
+	c.SetCookie(
+		"refresh_token", // cookie name
+		refreshToken,    // value
+		7*24*60*60,      // maxAge in seconds
+		"/",             // path: available to all endpoints
+		"localhost",     // domain: only hostname
+		false,           // secure: false for http in dev
+		true,            // httpOnly: true is fine
+	)
+
 	// Respond
 	c.JSON(http.StatusOK, gin.H{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+		"access_token": accessToken,
 		"user": gin.H{
 			"id":     user.ID,
 			"name":   user.FullName,
@@ -230,9 +248,25 @@ func UserSignIn(c *gin.Context) {
 		return
 	}
 
+	c.SetCookie(
+		"refresh_token", // cookie name
+		refreshToken,    // value
+		7*24*60*60,      // maxAge in seconds
+		"/",             // path: available to all endpoints
+		"localhost",     // domain: only hostname
+		false,           // secure: false for http in dev
+		true,            // httpOnly: true is fine
+	)
+
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+		logger.Error("refresh token error", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing refresh token"})
+		return
+	}
+	logger.Info("refresh toke", cookie)
 	c.JSON(http.StatusOK, gin.H{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+		"access_token": accessToken,
 		"user": gin.H{
 			"id":    user.ID,
 			"name":  user.FullName,
@@ -240,4 +274,24 @@ func UserSignIn(c *gin.Context) {
 			"role":  user.Role,
 		},
 	})
+}
+
+func RefreshSession(c *gin.Context) {
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+		logger.Error("refresh token error", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing refresh token"})
+		return
+	}
+
+	claims, err := utils.VerifyRefreshToken(cookie)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
+		return
+	}
+
+	// Generate new access token
+	accessToken, _ := utils.GenerateAccessToken(claims.UserID, claims.Role)
+
+	c.JSON(http.StatusOK, gin.H{"access_token": accessToken})
 }
