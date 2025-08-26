@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"interviewexcel-backend-go/config"
+	"os"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -11,8 +12,8 @@ import (
 
 // ❗ Move secrets to ENV (config.JWTAccessSecret, config.JWTRefreshSecret)
 var (
-	accessSecret  = []byte("your_access_secret_key")   // shorter lifetime
-	refreshSecret = []byte("your_refresh_secret_key") // longer lifetime
+	accessSecret  = []byte(os.Getenv("JWT_SECRET"))  // shorter lifetime
+	refreshSecret = []byte(os.Getenv("JWT_SECRET")) // longer lifetime
 )
 
 type Claims struct {
@@ -20,7 +21,6 @@ type Claims struct {
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
-
 
 // GenerateAccessToken issues an access token (default 15 min)
 func GenerateAccessToken(userID uint, role string) (string, error) {
@@ -98,7 +98,6 @@ func IsTokenBlacklisted(token string) (bool, error) {
 	return exists > 0, nil
 }
 
-
 func VerifyPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
@@ -106,4 +105,34 @@ func VerifyPassword(hashedPassword, password string) error {
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
+}
+
+var RefreshTokenSecret = []byte(os.Getenv("JWT_SECRET")) // use env variable in production
+
+type RefreshClaims struct {
+	UserID uint   `json:"user_id"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+// VerifyRefreshToken validates the refresh token and returns the claims if valid
+func VerifyRefreshToken(tokenStr string) (*RefreshClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return RefreshTokenSecret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*RefreshClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	// Optional: check expiration
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("refresh token expired")
+	}
+
+	return claims, nil
 }
