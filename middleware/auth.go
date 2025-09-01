@@ -19,10 +19,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//Extract the token (in case it's prefixed with "Bearer")
-		if strings.HasPrefix(tokenString, "Bearer ") {
-			tokenString = strings.TrimPrefix(tokenString, "Bearer ")
-		}
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
 		//Check if the token is BlacListed
 		isBlacklisted, err := utils.IsTokenBlacklisted(tokenString)

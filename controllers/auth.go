@@ -114,7 +114,10 @@ func Signup(c *gin.Context) {
 
 func UserGoogleAuth(c *gin.Context) {
 	var req GoogleAuthRequest
-	if err := c.ShouldBindJSON(&req); err != nil || (req.Role != "student" && req.Role != "expert") {
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil || (req.Role != "student" && req.Role != "expert") {
+		logger.Error("Error in binding request, ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing Google token or invalid role"})
 		return
 	}
@@ -122,12 +125,14 @@ func UserGoogleAuth(c *gin.Context) {
 	// Verify the Google token
 	payload, err := idtoken.Validate(c, req.Token, "")
 	if err != nil {
+		logger.Error("error in verifying google token, ", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Google token"})
 		return
 	}
 
 	email, ok := payload.Claims["email"].(string)
 	if !ok {
+		logger.Error("error: Email not found in token")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email not found in token"})
 		return
 	}
@@ -137,6 +142,7 @@ func UserGoogleAuth(c *gin.Context) {
 	emailVerified, _ := payload.Claims["email_verified"].(bool)
 
 	if !emailVerified {
+		logger.Error("Email not verified by Google")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email not verified by Google"})
 		return
 	}
@@ -157,7 +163,9 @@ func UserGoogleAuth(c *gin.Context) {
 			Role:     req.Role,
 		}
 
-		if err := userRepo.Create(user); err != nil {
+		err := userRepo.Create(user)
+		if err != nil {
+			logger.Error("error in creating the user: ", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 			return
 		}
@@ -165,12 +173,16 @@ func UserGoogleAuth(c *gin.Context) {
 		// Create respective profile
 		switch req.Role {
 		case "student":
-			if err := studentRepo.Create(&models.Student{UserID: user.ID}); err != nil {
+			err := studentRepo.Create(&models.Student{UserID: user.ID})
+			if err != nil {
+				logger.Error("error in creating student: ", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create student profile"})
 				return
 			}
 		case "expert":
-			if err := expertRepo.Create(&models.Expert{UserID: user.ID}); err != nil {
+			err := expertRepo.Create(&models.Expert{UserID: user.ID})
+			if err != nil {
+				logger.Error("error in creating expert: ", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create expert profile"})
 				return
 			}
@@ -180,12 +192,14 @@ func UserGoogleAuth(c *gin.Context) {
 	// Generate access and refresh tokens
 	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role)
 	if err != nil {
+		logger.Error("error in generating access token: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
 	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.Role)
 	if err != nil {
+		logger.Error("error in generating refresh token: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
 		return
 	}
@@ -258,13 +272,6 @@ func UserSignIn(c *gin.Context) {
 		true,            // httpOnly: true is fine
 	)
 
-	cookie, err := c.Cookie("refresh_token")
-	if err != nil {
-		logger.Error("refresh token error", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing refresh token"})
-		return
-	}
-	logger.Info("refresh toke", cookie)
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
 		"user": gin.H{
@@ -286,6 +293,7 @@ func RefreshSession(c *gin.Context) {
 
 	claims, err := utils.VerifyRefreshToken(cookie)
 	if err != nil {
+		logger.Error("errr in verifying refresh token:", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
 		return
 	}
