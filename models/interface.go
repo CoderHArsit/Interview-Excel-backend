@@ -32,13 +32,16 @@ type IPaymentRepo interface {
 
 type IStudent interface {
 	Create(student *Student) error
-	GetByEmail(email string) (*Student, error)
+	GetByUserUUID(uuid string) (*Student, error)
+	UpdateByUserUUID(uuid string, updates map[string]interface{}) error
+	DeleteByUserUUID(uuid string) error
+	ListAll() ([]Student, error)
 }
 
 type IUser interface {
 	InitUserRepo(db *gorm.DB) *UserRepo
 	Create(user *User) error
-	FindByID(id uint) (*User, error)
+	GetByUUID(id string) (*User, error)
 	FindByEmail(email string) (*User, error)
 	Update(user *User) error
 	Delete(id uint) error

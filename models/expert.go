@@ -8,7 +8,7 @@ import (
 
 type Expert struct {
 	ID                uint      `gorm:"primaryKey" json:"id"`
-	UserID            uint      `gorm:"uniqueIndex" json:"user_id"` // 1-to-1 with User
+	UserID            string    `gorm:"uniqueIndex" json:"user_uuid"` // references User.UserUUID
 	Bio               string    `json:"bio,omitempty"`
 	Expertise         string    `gorm:"not null" json:"expertise"`
 	ExperienceYears   int       `gorm:"not null" json:"experience_years"`

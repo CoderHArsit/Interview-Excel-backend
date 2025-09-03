@@ -2,28 +2,36 @@ package utils
 
 import (
 	"errors"
-	"interviewexcel-backend-go/config"
-	"os"
-	"time"
-
 	jwt "github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"interviewexcel-backend-go/config"
+	logger "interviewexcel-backend-go/pkg/errors"
+	"os"
+	"time"
 )
 
 // ❗ Move secrets to ENV (config.JWTAccessSecret, config.JWTRefreshSecret)
 var (
-	accessSecret  = []byte(os.Getenv("JWT_SECRET"))  // shorter lifetime
+	accessSecret  = []byte(os.Getenv("JWT_SECRET")) // shorter lifetime
 	refreshSecret = []byte(os.Getenv("JWT_SECRET")) // longer lifetime
 )
 
 type Claims struct {
-	UserID uint   `json:"user_id"`
+	UserID string `json:"user_uuid"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// GenerateAccessToken issues an access token (default 15 min)
-func GenerateAccessToken(userID uint, role string) (string, error) {
+func getAccessSecret() []byte {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		logger.Fatal("JWT_SECRET not set")
+	}
+	logger.Info("secret",secret)
+	return []byte(secret)
+}
+
+func GenerateAccessToken(userID string, role string) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,
@@ -35,11 +43,11 @@ func GenerateAccessToken(userID uint, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(accessSecret)
+	return token.SignedString(getAccessSecret())
 }
 
 // GenerateRefreshToken issues a refresh token (default 30 days)
-func GenerateRefreshToken(userID uint, role string) (string, error) {
+func GenerateRefreshToken(userID string, role string) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,
@@ -51,7 +59,7 @@ func GenerateRefreshToken(userID uint, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(refreshSecret)
+	return token.SignedString(getAccessSecret())
 }
 
 func ValidateAccessToken(tokenStr string) (*Claims, error) {
@@ -110,7 +118,7 @@ func HashPassword(password string) (string, error) {
 var RefreshTokenSecret = []byte(os.Getenv("JWT_SECRET")) // use env variable in production
 
 type RefreshClaims struct {
-	UserID uint   `json:"user_id"`
+	UserID string `json:"user_uuid"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }

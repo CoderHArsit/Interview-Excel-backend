@@ -4,6 +4,7 @@ package controllers
 import (
 	"interviewexcel-backend-go/config"
 	"interviewexcel-backend-go/models"
+	logger "interviewexcel-backend-go/pkg/errors"
 	"net/http"
 	"strconv"
 
@@ -11,19 +12,31 @@ import (
 )
 
 func GetStudentProfile(c *gin.Context) {
-	studentID, exists := c.Get("student_id")
+	studenRepo := models.InitStudentRepo(config.DB)
+
+	userID, exists := c.Get("user_uuid")
 	if !exists {
+		logger.Error("User not exists")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var student models.Student
-	if err := config.DB.First(&student, studentID).Error; err != nil {
+	// type assertion to string
+	uuid, ok := userID.(string)
+	if !ok {
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
+		return
+	}
+
+	studentResp, err := studenRepo.GetByUserUUID(uuid)
+	if err != nil {
+		logger.Error("error in geting student: ", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, student)
+	c.JSON(http.StatusOK, studentResp)
 }
 
 func UpdateStudentProfile(c *gin.Context) {
@@ -47,9 +60,8 @@ func UpdateStudentProfile(c *gin.Context) {
 	if err := config.DB.Model(&models.Student{}).
 		Where("id = ?", studentID).
 		Updates(models.Student{
-			
-			Bio:      input.Bio,
-			
+
+			Bio: input.Bio,
 		}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 		return

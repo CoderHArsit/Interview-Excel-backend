@@ -9,23 +9,21 @@ import (
 
 type User struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserUUID  string    `gorm:"uniqueIndex" json:"user_uuid"` // make it unique if used for relation
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	FullName string `gorm:"not null" json:"full_name"`
-	Email    string `gorm:"not null;uniqueIndex" json:"email"`
-	Picture  string `json:"picture"`
-
-	Password *string `json:"-"` // nullable: for Google users we may not store password
+	FullName string  `gorm:"not null" json:"full_name"`
+	Email    string  `gorm:"not null;uniqueIndex" json:"email"`
+	Picture  string  `json:"picture"`
+	Password *string `json:"-"`
 	Phone    *string `gorm:"uniqueIndex" json:"phone,omitempty"`
-
-	Role string `gorm:"not null" json:"role"` // "student" | "expert" | "admin"
+	Role     string  `gorm:"not null" json:"role"` // "student" | "expert" | "admin"
 
 	// Relations
-	Student Student `gorm:"foreignKey:UserID" json:"student,omitempty"`
-	Expert  Expert  `gorm:"foreignKey:UserID" json:"expert,omitempty"`
+	Student Student `gorm:"foreignKey:UserID;references:UserUUID" json:"student,omitempty"`
+	Expert  Expert  `gorm:"foreignKey:UserID;references:UserUUID" json:"expert,omitempty"`
 }
-
 type UserRepo struct {
 	db *gorm.DB
 }
@@ -40,9 +38,9 @@ func (r *UserRepo) Create(user *User) error {
 }
 
 // Find user by ID
-func (r *UserRepo) GetByID(id uint) (*User, error) {
+func (r *UserRepo) GetByUUID(id string) (*User, error) {
 	var user User
-	if err := r.db.First(&user, id).Error; err != nil {
+	if err := r.db.Where("user_uuid=?", id).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

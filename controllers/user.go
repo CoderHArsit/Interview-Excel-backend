@@ -15,7 +15,7 @@ import (
 var AccessTokenSecret = []byte(os.Getenv("JWT_SECRET"))
 
 type AccessClaims struct {
-	UserID uint   `json:"user_id"`
+	UserID string   `json:"user_uuid"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
@@ -50,7 +50,7 @@ func GetUser(c *gin.Context) {
 
 	// Fetch user
 	userRepo := models.InitUserRepo(config.DB)
-	user, err := userRepo.GetByID(claims.UserID)
+	user, err := userRepo.GetByUUID(claims.UserID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
