@@ -38,6 +38,7 @@ func Signup(c *gin.Context) {
 
 	user := models.User{
 		FullName: req.FullName,
+		UserUUID: utils.GenerateUserUUID(req.Role),
 		Email:    req.Email,
 		Password: password,
 		Role:     req.Role, // "student" or "expert"
@@ -52,14 +53,14 @@ func Signup(c *gin.Context) {
 	// 🔹 Create respective profile
 	switch req.Role {
 	case "student":
-		student := models.Student{UserID: user.ID}
+		student := models.Student{UserID: user.UserUUID}
 		if err := config.DB.Create(&student).Error; err != nil {
 			logger.Errorf("Error creating student profile: %v\n", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create student profile"})
 			return
 		}
 	case "expert":
-		expert := models.Expert{UserID: user.ID}
+		expert := models.Expert{UserID: user.UserUUID}
 		if err := config.DB.Create(&expert).Error; err != nil {
 			logger.Errorf("Error creating expert profile: %v\n", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create expert profile"})
@@ -68,14 +69,14 @@ func Signup(c *gin.Context) {
 	}
 
 	// 🔹 Generate tokens
-	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role)
+	accessToken, err := utils.GenerateAccessToken(user.UserUUID, user.Role)
 	if err != nil {
 		logger.Errorf("Error generating access token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.Role)
+	refreshToken, err := utils.GenerateRefreshToken(user.UserUUID, user.Role)
 	if err != nil {
 		logger.Errorf("Error generating refresh token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
@@ -173,14 +174,14 @@ func UserGoogleAuth(c *gin.Context) {
 		// Create respective profile
 		switch req.Role {
 		case "student":
-			err := studentRepo.Create(&models.Student{UserID: user.ID})
+			err := studentRepo.Create(&models.Student{UserID: user.UserUUID})
 			if err != nil {
 				logger.Error("error in creating student: ", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create student profile"})
 				return
 			}
 		case "expert":
-			err := expertRepo.Create(&models.Expert{UserID: user.ID})
+			err := expertRepo.Create(&models.Expert{UserID: user.UserUUID})
 			if err != nil {
 				logger.Error("error in creating expert: ", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create expert profile"})
@@ -190,14 +191,14 @@ func UserGoogleAuth(c *gin.Context) {
 	}
 
 	// Generate access and refresh tokens
-	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role)
+	accessToken, err := utils.GenerateAccessToken(user.UserUUID, user.Role)
 	if err != nil {
 		logger.Error("error in generating access token: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.Role)
+	refreshToken, err := utils.GenerateRefreshToken(user.UserUUID, user.Role)
 	if err != nil {
 		logger.Error("error in generating refresh token: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
@@ -248,14 +249,14 @@ func UserSignIn(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := utils.GenerateAccessToken(user.ID, user.Role)
+	accessToken, err := utils.GenerateAccessToken(user.UserUUID, user.Role)
 	if err != nil {
 		logger.Errorf("Error generating access token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.Role)
+	refreshToken, err := utils.GenerateRefreshToken(user.UserUUID, user.Role)
 	if err != nil {
 		logger.Errorf("Error generating refresh token: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
