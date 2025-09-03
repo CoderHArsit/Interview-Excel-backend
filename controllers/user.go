@@ -12,7 +12,6 @@ import (
 	logger "interviewexcel-backend-go/pkg/errors"
 )
 
-var AccessTokenSecret = []byte(os.Getenv("JWT_SECRET"))
 
 type AccessClaims struct {
 	UserID string   `json:"user_uuid"`
@@ -30,11 +29,11 @@ func GetUser(c *gin.Context) {
 
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
-	logger.Info("token",tokenStr)
 	
 	// Parse and verify token
+	jwtSecret := []byte(os.Getenv("JWT_SECRET")) 
 	token, err := jwt.ParseWithClaims(tokenStr, &AccessClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return AccessTokenSecret, nil
+		return jwtSecret, nil
 	})
 	if err != nil || !token.Valid {
 		logger.Error("error in parsing token:",err)
