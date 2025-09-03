@@ -292,7 +292,7 @@ func RefreshSession(c *gin.Context) {
 		return
 	}
 
-	claims, err := utils.VerifyRefreshToken(cookie)
+	claims, err := utils.ValidateRefreshToken(cookie)
 	if err != nil {
 		logger.Error("errr in verifying refresh token:", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})

@@ -11,9 +11,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetStudentProfile(c *gin.Context) {
-	studenRepo := models.InitStudentRepo(config.DB)
+func safeString(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
+}
 
+func GetStudentProfile(c *gin.Context) {
+	studentRepo := models.InitStudentRepo(config.DB)
+	userRepo := models.InitUserRepo(config.DB)
+
+	// Extract user_uuid from context
 	userID, exists := c.Get("user_uuid")
 	if !exists {
 		logger.Error("User not exists")
@@ -21,22 +30,44 @@ func GetStudentProfile(c *gin.Context) {
 		return
 	}
 
-	// type assertion to string
 	uuid, ok := userID.(string)
 	if !ok {
-
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
 		return
 	}
 
-	studentResp, err := studenRepo.GetByUserUUID(uuid)
+	// Fetch student details
+	student, err := studentRepo.GetByUserUUID(uuid)
 	if err != nil {
-		logger.Error("error in geting student: ", err)
+		logger.Error("error in getting student: ", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, studentResp)
+	// Fetch user details
+	user, err := userRepo.GetByUUID(uuid)
+	if err != nil {
+		logger.Error("error in getting user: ", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Merge response
+	resp := StudentProfileResponse{
+		UserID:      uuid,
+		Role:        user.Role,
+		Email:       user.Email,
+		Phone:       safeString(user.Phone),
+		Bio:         student.Bio,
+		Sessions:    student.Sessions,
+		Points:      student.Points,
+		DateOfBirth: student.DateOfBirth,
+		City:        student.City,
+		AboutMe:     student.AboutMe,
+		Skills:      student.Skills,
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func UpdateStudentProfile(c *gin.Context) {
