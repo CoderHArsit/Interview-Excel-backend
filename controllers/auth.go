@@ -159,6 +159,7 @@ func UserGoogleAuth(c *gin.Context) {
 		// New user
 		user = &models.User{
 			FullName: name,
+			UserUUID: utils.GenerateUserUUID(req.Role),
 			Email:    email,
 			Picture:  picture,
 			Role:     req.Role,

@@ -2,6 +2,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"interviewexcel-backend-go/config"
 	"interviewexcel-backend-go/models"
 	logger "interviewexcel-backend-go/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 )
 
 func safeString(s *string) string {
@@ -17,7 +19,6 @@ func safeString(s *string) string {
 	}
 	return ""
 }
-
 func GetStudentProfile(c *gin.Context) {
 	studentRepo := models.InitStudentRepo(config.DB)
 	userRepo := models.InitUserRepo(config.DB)
@@ -52,10 +53,20 @@ func GetStudentProfile(c *gin.Context) {
 		return
 	}
 
+	// 🔹 Unmarshal skills JSON into []string
+	var skills []string
+	if len(student.Skills) > 0 {
+		if err := json.Unmarshal(student.Skills, &skills); err != nil {
+			logger.Error("error unmarshalling skills: ", err)
+			skills = []string{} // fallback empty
+		}
+	}
+
 	// Merge response
-	resp := StudentProfileResponse{
+	resp := StudentProfile{
 		UserID:      uuid,
 		Role:        user.Role,
+		FullName:    user.FullName,
 		Email:       user.Email,
 		Phone:       safeString(user.Phone),
 		Bio:         student.Bio,
@@ -64,37 +75,85 @@ func GetStudentProfile(c *gin.Context) {
 		DateOfBirth: student.DateOfBirth,
 		City:        student.City,
 		AboutMe:     student.AboutMe,
-		Skills:      student.Skills,
+		Skills:      skills, // ✅ now proper []string
 	}
 
 	c.JSON(http.StatusOK, resp)
 }
 
 func UpdateStudentProfile(c *gin.Context) {
-	studentID, exists := c.Get("student_id")
+	var (
+		request StudentProfile
+	)
+
+	userID, exists := c.Get("user_uuid")
 	if !exists {
+		logger.Error("User doesn't exist")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var input struct {
-		Name         string `json:"name"`
-		Bio          string `json:"bio"`
-		ProfileImage string `json:"profile_image"`
+	uuid, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
+		return
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		logger.Error("error in binding Request: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	if err := config.DB.Model(&models.Student{}).
-		Where("id = ?", studentID).
-		Updates(models.Student{
+	// start a transaction
+	tx := config.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		return
+	}
 
-			Bio: input.Bio,
-		}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+	// use tx for repos
+	studentRepo := models.InitStudentRepo(tx)
+	userRepo := models.InitUserRepo(tx)
+
+	skillsJSON, _ := json.Marshal(request.Skills)
+
+	studentRequest := &models.Student{
+		Bio:          request.Bio,
+		PreparingFor: request.PreparingFor,
+		DateOfBirth:  request.DateOfBirth,
+		City:         request.City,
+		AboutMe:      request.AboutMe,
+		Skills:       datatypes.JSON(skillsJSON), // ✅ direct cast
+	}
+
+	// first update student
+	err = studentRepo.UpdateByUserUUID(uuid, studentRequest)
+	if err != nil {
+		tx.Rollback()
+		logger.Error("error in updating student: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update student profile"})
+		return
+	}
+
+	// then update user
+	err = userRepo.UpdateByUserUUID(uuid, &models.User{
+		FullName: request.FullName,
+		Phone:    &request.Phone,
+	})
+	if err != nil {
+		tx.Rollback()
+		logger.Error("error in updating user: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user profile"})
+		return
+	}
+
+	// commit if both succeeded
+	err = tx.Commit().Error
+	if err != nil {
+		logger.Error("failed to commit transaction: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction failed"})
 		return
 	}
 

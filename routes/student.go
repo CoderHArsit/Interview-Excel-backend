@@ -9,7 +9,7 @@ import (
 
 func RegisterStudentRoutes(r *gin.Engine) {
 	studentRoutes := r.Group("/student")
-	studentRoutes.Use(middleware.AuthMiddleware()) // already created earlier
+	studentRoutes.Use(middleware.AuthMiddleware()) 
 
 	studentRoutes.GET("/profile", controllers.GetStudentProfile)
 	studentRoutes.PUT("/profile", controllers.UpdateStudentProfile)

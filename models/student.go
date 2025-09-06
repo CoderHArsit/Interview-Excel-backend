@@ -1,23 +1,25 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type Student struct {
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	ID           uint      `gorm:"primaryKey" json:"id"`
-	UserID       string    `gorm:"uniqueIndex" json:"user_uuid"` // references User.UserUUID
-	Bio          string    `json:"bio,omitempty"`
-	Sessions     string    `json:"sessions"`
-	Points       string    `json:"points"`
-	PreparingFor string    `json:"preparing_for"`
-	DateOfBirth  time.Time `json:"dob"`
-	City         string    `json:"city"`
-	AboutMe      string    `json:"about_me"`
-	Skills       []string  `gorm:"type:json" json:"skills"` // JSON column for skills
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	ID           uint           `gorm:"primaryKey" json:"id"`
+	UserID       string         `gorm:"uniqueIndex" json:"user_uuid"` // references User.UserUUID
+	Bio          string         `json:"bio,omitempty"`
+	Sessions     string         `json:"sessions"`
+	Points       string         `json:"points"`
+	PreparingFor string         `json:"preparing_for"`
+	DateOfBirth  time.Time      `json:"dob"`
+	City         string         `json:"city"`
+	AboutMe      string         `json:"about_me"`
+	Skills       datatypes.JSON `json:"skills"` // JSON column for skills
 }
 
 type StudentRepo struct {
@@ -44,7 +46,7 @@ func (r *StudentRepo) GetByUserUUID(uuid string) (*Student, error) {
 }
 
 // Update student (by user UUID)
-func (r *StudentRepo) UpdateByUserUUID(uuid string, updates map[string]interface{}) error {
+func (r *StudentRepo) UpdateByUserUUID(uuid string, updates *Student) error {
 	return r.db.Model(&Student{}).
 		Where("user_id = ?", uuid).
 		Updates(updates).Error
