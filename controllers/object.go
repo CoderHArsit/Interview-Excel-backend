@@ -21,13 +21,14 @@ type GoogleAuthRequest struct {
 	Token string `json:"token" binding:"required"`
 }
 
-type StudentProfileResponse struct {
+type StudentProfile struct {
 	UserID string `json:"user_uuid"`
 	Role   string `json:"role"`
 
 	// from UserRepo
-	Email string `json:"email"`
-	Phone string `json:"phone"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	FullName string `json:"full_name"`
 
 	Bio          string    `json:"bio,omitempty"`
 	Sessions     string    `json:"sessions"`

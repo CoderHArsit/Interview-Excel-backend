@@ -65,8 +65,10 @@ func (r *UserRepo) GetByPhone(phone string) (*User, error) {
 }
 
 // Update user
-func (r *UserRepo) Update(user *User) error {
-	return r.db.Save(user).Error
+func (r *UserRepo) UpdateByUserUUID(uuid string, updates *User) error {
+	return r.db.Model(&User{}).
+		Where("user_uuid = ?", uuid).
+		Updates(updates).Error
 }
 
 // Delete user
