@@ -109,6 +109,7 @@ func UpdateStudentProfile(c *gin.Context) {
 	// start a transaction
 	tx := config.DB.Begin()
 	if tx.Error != nil {
+		logger.Error("error in starting transaction: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 		return
 	}

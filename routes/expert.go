@@ -9,11 +9,11 @@ import (
 
 func RegisterExpertRoutes(router *gin.Engine) {
 	// Protected routes
-	authexpertGroup := router.Group("/expert")
-	authexpertGroup.Use(middleware.AuthMiddleware()) // ✅ Apply middleware here
+	expertGroup := router.Group("/expert")
+	expertGroup.Use(middleware.AuthMiddleware()) // ✅ Apply middleware here
 
 	// authexpertGroup.POST("/generate-slots", controllers.GenerateWeeklyAvailability)
-	// expertGroup.GET("/profile", controllers.GetExpertProfile)
-	authexpertGroup.GET("/my-slots", controllers.GetAvailableSlotsForExpertHandler)
+	expertGroup.GET("/profile", controllers.GetExpertProfile)
+	expertGroup.GET("/my-slots", controllers.GetAvailableSlotsForExpertHandler)
 	// Add more protected expert routes here
 }
