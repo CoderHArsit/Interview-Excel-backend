@@ -39,3 +39,27 @@ type StudentProfile struct {
 	AboutMe      string    `json:"about_me"`
 	Skills       []string  `gorm:"type:json" json:"skills"` // JSON column for skills
 }
+
+type ExpertProfile struct {
+	// From User
+	UserID   uint    `json:"id"`
+	UserUUID string  `json:"user_uuid"`
+	FullName string  `json:"full_name"`
+	Email    string  `json:"email"`
+	Picture  string  `json:"picture,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
+	Role     string  `json:"role"`
+
+	// From Expert
+	Bio                string   `json:"bio,omitempty"`
+	Languages          []string `json:"languages,omitempty"`
+	Specializations    []string `json:"specializations,omitempty"`
+	Expertise          string   `json:"expertise"`
+	Education          string   `json:"education,omitempty"`
+	ExperienceYears    int      `json:"experience_years"`
+	ProfilePictureUrl  string   `json:"profile_picture_url,omitempty"`
+	FeesPerSession     int      `json:"fees_per_session"`
+	Rating             float64  `json:"rating,omitempty"` // if you added
+	TotalSessions      int      `json:"total_sessions,omitempty"`
+	VerificationStatus string   `json:"verification_status,omitempty"`
+}
