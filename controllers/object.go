@@ -46,20 +46,24 @@ type ExpertProfile struct {
 	UserUUID string  `json:"user_uuid"`
 	FullName string  `json:"full_name"`
 	Email    string  `json:"email"`
-	Picture  string  `json:"picture,omitempty"`
-	Phone    *string `json:"phone,omitempty"`
+	Picture  string  `json:"picture"`
+	Phone    *string `json:"phone"`
 	Role     string  `json:"role"`
+	City     string  `json:"city"`
 
 	// From Expert
-	Bio                string   `json:"bio,omitempty"`
-	Languages          []string `json:"languages,omitempty"`
-	Specializations    []string `json:"specializations,omitempty"`
-	Expertise          string   `json:"expertise"`
-	Education          string   `json:"education,omitempty"`
-	ExperienceYears    int      `json:"experience_years"`
-	ProfilePictureUrl  string   `json:"profile_picture_url,omitempty"`
-	FeesPerSession     int      `json:"fees_per_session"`
-	Rating             float64  `json:"rating,omitempty"` // if you added
-	TotalSessions      int      `json:"total_sessions,omitempty"`
-	VerificationStatus string   `json:"verification_status,omitempty"`
+	Bio                string    `json:"bio"`
+	DOB                time.Time `json:"dob"`
+	Languages          []string  `json:"languages"`
+	Specializations    []string  `json:"specializations"`
+	Expertise          string    `json:"expertise"`
+	Education          string    `json:"education"`
+	ExperienceYears    int       `json:"experience_years"`
+	ProfilePictureUrl  string    `json:"profile_picture_url"`
+	FeesPerSession     int       `json:"fees_per_session"`
+	Rating             float64   `json:"rating"` // if you added
+	TotalSessions      int       `json:"total_sessions"`
+	VerificationStatus string    `json:"verification_status"`
+	IsAvailable        bool      `json:"is_available"`
+	StudentMentored    int64     `json:"student_mentored"`
 }

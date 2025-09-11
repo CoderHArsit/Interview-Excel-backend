@@ -21,11 +21,14 @@ type Expert struct {
 	Education         string         `json:"education,omitempty"`
 	Languages         pq.StringArray `gorm:"type:text[]" json:"languages,omitempty"`
 	ProfilePictureUrl string         `json:"profile_picture_url,omitempty"`
-	FeesPerSession    int            ` json:"fees_per_session"`
+	FeesPerSession    int            `json:"fees_per_session"`
+	City              string         `json:"city"`
+	DOB               time.Time      `json:"dob"`
 
 	Rating             float64 `gorm:"default:0" json:"rating"`
 	TotalSessions      int     `gorm:"default:0" json:"total_sessions"`
 	VerificationStatus string  `gorm:"default:'pending'" json:"verification_status"`
+	StudentMentored    int64   `gorm:"default:0" json:"student_mentored"`
 	IsAvailable        bool    `gorm:"default:true" json:"is_available"`
 }
 
