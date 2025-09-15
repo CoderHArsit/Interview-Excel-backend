@@ -30,6 +30,8 @@ type Expert struct {
 	VerificationStatus string  `gorm:"default:'pending'" json:"verification_status"`
 	StudentMentored    int64   `gorm:"default:0" json:"student_mentored"`
 	IsAvailable        bool    `gorm:"default:true" json:"is_available"`
+
+	AvailabilitySlots []AvailabilitySlot `gorm:"foreignKey:ExpertID" json:"availability_slots,omitempty"`
 }
 
 type expertRepo struct {

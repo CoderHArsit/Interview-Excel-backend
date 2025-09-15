@@ -4,9 +4,12 @@ import (
 	"interviewexcel-backend-go/config"
 	"interviewexcel-backend-go/models"
 	"net/http"
+	"strings"
+	"time"
+
+	logger "interviewexcel-backend-go/pkg/errors"
 
 	"github.com/gin-gonic/gin"
-	logger "interviewexcel-backend-go/pkg/errors"
 )
 
 func GetExpertBookingsHandler(c *gin.Context) {
@@ -159,4 +162,75 @@ func UpdateExpertProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+}
+
+type AvailabilityRequest struct {
+	ExpertID int      `json:"expert_id"`
+	Days     []string `json:"days"`       // ["monday","wednesday","friday"]
+	Start    string   `json:"start_time"` // "10:00"
+	End      string   `json:"end_time"`   // "14:00"
+	SlotSize int      `json:"slot_size"`  // minutes, e.g. 60
+}
+
+type Slot struct {
+	ExpertID  int       `json:"expert_id"`
+	Date      time.Time `json:"date"`
+	StartTime string    `json:"start_time"`
+	EndTime   string    `json:"end_time"`
+	IsBooked  bool      `json:"is_booked"`
+}
+
+func GenerateWeeklyAvailability(c *gin.Context) {
+	var (
+		req              AvailabilityRequest
+		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+	)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	weekStart := time.Now()
+	// force start of week (Monday)
+	for weekStart.Weekday() != time.Monday {
+		weekStart = weekStart.AddDate(0, 0, -1)
+	}
+
+	var slots []models.AvailabilitySlot
+	daySet := make(map[string]bool)
+	for _, d := range req.Days {
+		daySet[strings.ToLower(d)] = true
+	}
+
+	// iterate over 7 days
+	for i := 0; i < 7; i++ {
+		currentDay := weekStart.AddDate(0, 0, i)
+		if !daySet[strings.ToLower(currentDay.Weekday().String())] {
+			continue
+		}
+
+		start, _ := time.Parse("15:04", req.Start)
+		end, _ := time.Parse("15:04", req.End)
+		duration := time.Minute * time.Duration(req.SlotSize)
+
+		for t := start; t.Add(duration).Before(end) || t.Add(duration).Equal(end); t = t.Add(duration) {
+			slot := models.AvailabilitySlot{
+				ExpertID:  uint(req.ExpertID),
+				Date:      currentDay,
+				StartTime: t,
+				EndTime:   t.Add(duration),
+				IsBooked:  false,
+			}
+			slots = append(slots, slot)
+		}
+	}
+
+	err := availabilityRepo.CreateAvailabilitySlot(slots)
+	if err != nil {
+		logger.Error("error in generating slots:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+	}
+
+	// TODO: save slots to DB
+	c.JSON(200, gin.H{"slots": slots})
 }

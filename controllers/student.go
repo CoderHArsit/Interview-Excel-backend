@@ -307,3 +307,4 @@ func GetStudentBookingsHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, slots)
 }
+
