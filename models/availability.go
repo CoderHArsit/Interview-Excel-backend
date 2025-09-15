@@ -28,6 +28,9 @@ func InitAvailabilitySlotRepo(db *gorm.DB) IAvailabilitySlotRepo {
 		DB: db,
 	}
 }
+func (r *availabilitySlotRepo) CreateAvailabilitySlot(availability []AvailabilitySlot) error {
+	return r.DB.Create(&availability).Error
+}
 
 // Get all slots for an expert
 func (r *availabilitySlotRepo) GetAllByExpert(expertID uint) ([]AvailabilitySlot, error) {
