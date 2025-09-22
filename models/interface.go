@@ -16,8 +16,8 @@ type IExpert interface {
 
 type IAvailabilitySlotRepo interface {
 	CreateAvailabilitySlot(availability []AvailabilitySlot) error
-	GetAllByExpert(expertID uint) ([]AvailabilitySlot, error)
-	GetAvailableByExpert(expertID uint) ([]AvailabilitySlot, error)
+	GetAllByExpert(expertID string) ([]AvailabilitySlot, error)
+	GetAvailableByExpert(expertID string) ([]AvailabilitySlot, error)
 	GetByID(id uint) (*AvailabilitySlot, error)
 	MarkAsBooked(id uint) error
 	Delete(id uint) error

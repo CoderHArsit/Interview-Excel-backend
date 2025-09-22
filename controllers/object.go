@@ -67,3 +67,19 @@ type ExpertProfile struct {
 	IsAvailable        bool      `json:"is_available"`
 	StudentMentored    int64     `json:"student_mentored"`
 }
+
+type AvailabilityRequest struct {
+	ExpertID string   `json:"expert_id"`
+	Days     []string `json:"days"`       // ["monday","wednesday","friday"]
+	Start    string   `json:"start_time"` // "10:00"
+	End      string   `json:"end_time"`   // "14:00"
+	SlotSize int      `json:"duration"`   // minutes, e.g. 60
+}
+
+type Slot struct {
+	ExpertID  string    `json:"expert_id"`
+	Date      time.Time `json:"date"`
+	StartTime string    `json:"start_time"`
+	EndTime   string    `json:"end_time"`
+	IsBooked  bool      `json:"is_booked"`
+}

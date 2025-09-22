@@ -7,17 +7,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type Expert struct {
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	UserID    string    `gorm:"uniqueIndex" json:"user_uuid"` // references User.UserUUID
 
-	FullName          string         `json:"full_name"` // optional cache
+type Expert struct {
+	ID     uint   `gorm:"primaryKey" json:"id"`
+	UserID string `gorm:"uniqueIndex" json:"user_uuid"` // ✅ string identifier
+
+	FullName          string         `json:"full_name"`
 	Bio               string         `json:"bio,omitempty"`
 	Expertise         string         `json:"expertise"`
 	Specializations   pq.StringArray `gorm:"type:text[]" json:"specializations,omitempty"`
-	ExperienceYears   int            ` json:"experience_years"`
+	ExperienceYears   int            `json:"experience_years"`
 	Education         string         `json:"education,omitempty"`
 	Languages         pq.StringArray `gorm:"type:text[]" json:"languages,omitempty"`
 	ProfilePictureUrl string         `json:"profile_picture_url,omitempty"`
@@ -31,7 +30,7 @@ type Expert struct {
 	StudentMentored    int64   `gorm:"default:0" json:"student_mentored"`
 	IsAvailable        bool    `gorm:"default:true" json:"is_available"`
 
-	AvailabilitySlots []AvailabilitySlot `gorm:"foreignKey:ExpertID" json:"availability_slots,omitempty"`
+	AvailabilitySlots []AvailabilitySlot `gorm:"foreignKey:ExpertID;references:UserID" json:"availability_slots,omitempty"`
 }
 
 type expertRepo struct {

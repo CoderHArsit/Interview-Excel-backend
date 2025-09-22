@@ -16,5 +16,7 @@ func RegisterExpertRoutes(router *gin.Engine) {
 	expertGroup.GET("/profile", controllers.GetExpertProfile)
 	expertGroup.GET("/my-slots", controllers.GetAvailableSlotsForExpertHandler)
 	expertGroup.PUT("/profile", controllers.UpdateExpertProfile)
+	expertGroup.POST("/generate-slots", controllers.GenerateWeeklyAvailability)
+	expertGroup.GET("/all-slots", controllers.GetAllSlotsOfExpert)
 	// Add more protected expert routes here
 }
