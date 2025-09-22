@@ -164,58 +164,74 @@ func UpdateExpertProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
-type AvailabilityRequest struct {
-	ExpertID int      `json:"expert_id"`
-	Days     []string `json:"days"`       // ["monday","wednesday","friday"]
-	Start    string   `json:"start_time"` // "10:00"
-	End      string   `json:"end_time"`   // "14:00"
-	SlotSize int      `json:"slot_size"`  // minutes, e.g. 60
-}
-
-type Slot struct {
-	ExpertID  int       `json:"expert_id"`
-	Date      time.Time `json:"date"`
-	StartTime string    `json:"start_time"`
-	EndTime   string    `json:"end_time"`
-	IsBooked  bool      `json:"is_booked"`
-}
-
 func GenerateWeeklyAvailability(c *gin.Context) {
 	var (
 		req              AvailabilityRequest
 		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
 	)
+
+	// Bind request
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		logger.Error("invalid request body", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Find Monday of current week
 	weekStart := time.Now()
-	// force start of week (Monday)
 	for weekStart.Weekday() != time.Monday {
 		weekStart = weekStart.AddDate(0, 0, -1)
 	}
 
 	var slots []models.AvailabilitySlot
+
+	// Normalize requested days into a set for quick lookup
 	daySet := make(map[string]bool)
 	for _, d := range req.Days {
 		daySet[strings.ToLower(d)] = true
 	}
-
-	// iterate over 7 days
+	logger.Info("parsed gsargrrg", "req", req)
+	// Iterate over the week
 	for i := 0; i < 7; i++ {
 		currentDay := weekStart.AddDate(0, 0, i)
 		if !daySet[strings.ToLower(currentDay.Weekday().String())] {
 			continue
 		}
+		logger.Info("here gef")
+		// Parse clock times
+		startClock, err := time.Parse("15:04", req.Start)
+		if err != nil {
+			logger.Error("invalid start time", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start time"})
+			return
+		}
 
-		start, _ := time.Parse("15:04", req.Start)
-		end, _ := time.Parse("15:04", req.End)
+		endClock, err := time.Parse("15:04", req.End)
+		if err != nil {
+			logger.Error("invalid end time", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end time"})
+			return
+		}
+
+		// Merge with current day’s date
+		start := time.Date(
+			currentDay.Year(), currentDay.Month(), currentDay.Day(),
+			startClock.Hour(), startClock.Minute(), 0, 0, time.Local,
+		)
+		end := time.Date(
+			currentDay.Year(), currentDay.Month(), currentDay.Day(),
+			endClock.Hour(), endClock.Minute(), 0, 0, time.Local,
+		)
+		if req.SlotSize <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "slot size must be greater than 0"})
+			return
+		}
+
 		duration := time.Minute * time.Duration(req.SlotSize)
 
 		for t := start; t.Add(duration).Before(end) || t.Add(duration).Equal(end); t = t.Add(duration) {
 			slot := models.AvailabilitySlot{
-				ExpertID:  uint(req.ExpertID),
+				ExpertID:  (req.ExpertID),
 				Date:      currentDay,
 				StartTime: t,
 				EndTime:   t.Add(duration),
@@ -223,14 +239,54 @@ func GenerateWeeklyAvailability(c *gin.Context) {
 			}
 			slots = append(slots, slot)
 		}
+
 	}
 
-	err := availabilityRepo.CreateAvailabilitySlot(slots)
+	// Save slots
+	if len(slots) == 0 {
+		logger.Warn("no slots generated for given request")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no slots generated"})
+		return
+	}
+
+	if err := availabilityRepo.CreateAvailabilitySlot(slots); err != nil {
+		logger.Error("error in generating slots", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"slots": slots})
+}
+
+type GetSlotsOfMerhantRequest struct {
+	ExpertID string `json:"expert_id"`
+}
+
+func GetAllSlotsOfExpert(c *gin.Context) {
+	var (
+		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+		// request          GetSlotsOfMerhantRequest
+	)
+
+	expertUUIDStr, ok := c.Get("user_uuid")
+	if !ok {
+		logger.Error("cannot find expert uuid")
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "cannot find expert uuid",
+		})
+		return
+	}
+	uuid, ok := expertUUIDStr.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
+		return
+	}
+
+	availableSlots, err := availabilityRepo.GetAllByExpert(uuid)
 	if err != nil {
-		logger.Error("error in generating slots:", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		logger.Error("Error in getting the available slots: ", err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
 	}
-
-	// TODO: save slots to DB
-	c.JSON(200, gin.H{"slots": slots})
+	c.JSON(http.StatusOK, availableSlots)
 }

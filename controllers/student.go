@@ -7,7 +7,7 @@ import (
 	"interviewexcel-backend-go/models"
 	logger "interviewexcel-backend-go/pkg/errors"
 	"net/http"
-	"strconv"
+
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
@@ -179,13 +179,8 @@ func GetAvailableSlotsForExpertHandler(c *gin.Context) {
 		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
 	)
 	expertIDStr := c.Param("id")
-	expertID, err := strconv.Atoi(expertIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid expert id"})
-		return
-	}
 
-	slots, err := availabilityRepo.GetAvailableByExpert(uint(expertID))
+	slots, err := availabilityRepo.GetAvailableByExpert((expertIDStr))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch slots"})
 		return
@@ -194,117 +189,116 @@ func GetAvailableSlotsForExpertHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, slots)
 }
 
-func PreviewSlotForPaymentHandler(c *gin.Context) {
-	var req struct {
-		SlotID uint `json:"slot_id"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return
-	}
+// func PreviewSlotForPaymentHandler(c *gin.Context) {
+// 	var req struct {
+// 		SlotID uint `json:"slot_id"`
+// 	}
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+// 		return
+// 	}
 
-	availabilityRepo := models.InitAvailabilitySlotRepo(config.DB)
+// 	availabilityRepo := models.InitAvailabilitySlotRepo(config.DB)
 
-	// Get slot
-	slot, err := availabilityRepo.GetByID(req.SlotID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "slot not found"})
-		return
-	}
+// 	// Get slot
+// 	slot, err := availabilityRepo.GetByID(req.SlotID)
+// 	if err != nil {
+// 		c.JSON(http.StatusNotFound, gin.H{"error": "slot not found"})
+// 		return
+// 	}
 
-	if slot.IsBooked {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slot already booked"})
-		return
-	}
+// 	if slot.IsBooked {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "slot already booked"})
+// 		return
+// 	}
 
-	// Get expert
-	expertRepo := models.InitExpertRepo(config.DB)
-	expert, err := expertRepo.GetByID(uint64(slot.ExpertID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "expert not found"})
-		return
-	}
+// 	// Get expert
+// 	expertRepo := models.InitExpertRepo(config.DB)
+// 	expert, err := expertRepo.GetByID((slot.ExpertID))
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "expert not found"})
+// 		return
+// 	}
 
-	// Platform fee logic
-	platformFee := int(0.2 * float64(expert.FeesPerSession)) // 10%
-	totalAmount := expert.FeesPerSession + platformFee
+// 	// Platform fee logic
+// 	platformFee := int(0.2 * float64(expert.FeesPerSession)) // 10%
+// 	totalAmount := expert.FeesPerSession + platformFee
 
-	c.JSON(http.StatusOK, gin.H{
-		"expert": gin.H{
-			"domain":           expert.Expertise,
-			"fees_per_session": expert.FeesPerSession,
-		},
-		"slot": gin.H{
-			"slot_id":    slot.ID,
-			"day":        slot.Date,
-			"start_time": slot.StartTime,
-			"end_time":   slot.EndTime,
-		},
-		"platform_fee": platformFee,
-		"total_amount": totalAmount,
-	})
-}
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"expert": gin.H{
+// 			"domain":           expert.Expertise,
+// 			"fees_per_session": expert.FeesPerSession,
+// 		},
+// 		"slot": gin.H{
+// 			"slot_id":    slot.ID,
+// 			"day":        slot.Date,
+// 			"start_time": slot.StartTime,
+// 			"end_time":   slot.EndTime,
+// 		},
+// 		"platform_fee": platformFee,
+// 		"total_amount": totalAmount,
+// 	})
+// }
 
-func BookAvailabilitySlotHandler(c *gin.Context) {
-	// Extract student ID from context
-	var (
-		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
-	)
-	studentIDVal, exists := c.Get("studentID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	studentID := studentIDVal.(uint)
+// func BookAvailabilitySlotHandler(c *gin.Context) {
+// 	// Extract student ID from context
+// 	var (
+// 		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+// 	)
+// 	studentIDVal, exists := c.Get("studentID")
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+// 		return
+// 	}
+// 	studentID := studentIDVal.(uint)
 
-	// Parse body
-	var req BookSlotRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
-		return
-	}
+// 	// Parse body
+// 	var req BookSlotRequest
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+// 		return
+// 	}
 
-	// Get slot
-	slot, err := availabilityRepo.GetByID(req.SlotID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "slot not found"})
-		return
-	}
+// 	// Get slot
+// 	slot, err := availabilityRepo.GetByID(req.SlotID)
+// 	if err != nil {
+// 		c.JSON(http.StatusNotFound, gin.H{"error": "slot not found"})
+// 		return
+// 	}
 
-	if slot.IsBooked {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slot already booked"})
-		return
-	}
+// 	if slot.IsBooked {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "slot already booked"})
+// 		return
+// 	}
 
-	// Book slot
-	slot.IsBooked = true
-	slot.StudentID = &studentID
-	if err := availabilityRepo.Update(slot); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to book slot"})
-		return
-	}
+// 	// Book slot
+// 	slot.IsBooked = true
+// 	slot.StudentID = &studentID
+// 	if err := availabilityRepo.Update(slot); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to book slot"})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "slot booked successfully", "slot": slot})
-}
+// 	c.JSON(http.StatusOK, gin.H{"message": "slot booked successfully", "slot": slot})
+// }
 
-func GetStudentBookingsHandler(c *gin.Context) {
-	var (
-		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
-	)
-	studentIDInterface, exists := c.Get("student_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
+// func GetStudentBookingsHandler(c *gin.Context) {
+// 	var (
+// 		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+// 	)
+// 	studentIDInterface, exists := c.Get("student_id")
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+// 		return
+// 	}
 
-	studentID := studentIDInterface.(uint)
+// 	studentID := studentIDInterface.(uint)
 
-	slots, err := availabilityRepo.GetBookedByStudent(studentID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch bookings"})
-		return
-	}
+// 	slots, err := availabilityRepo.GetBookedByStudent(studentID)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch bookings"})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, slots)
-}
-
+// 	c.JSON(http.StatusOK, slots)
+// }

@@ -13,10 +13,10 @@ func RegisterStudentRoutes(r *gin.Engine) {
 
 	studentRoutes.GET("/profile", controllers.GetStudentProfile)
 	studentRoutes.PUT("/profile", controllers.UpdateStudentProfile)
-	studentRoutes.POST("/book-slot", controllers.BookAvailabilitySlotHandler)
+	// studentRoutes.POST("/book-slot", controllers.BookAvailabilitySlotHandler)
 	studentRoutes.GET("/experts", controllers.GetAllExpertsHandler)
 	studentRoutes.GET("/expert/:id/slots", controllers.GetAvailableSlotsForExpertHandler)
-	studentRoutes.GET("/bookings", controllers.GetStudentBookingsHandler)
-	studentRoutes.POST("/preview-slot", controllers.PreviewSlotForPaymentHandler)
+	// studentRoutes.GET("/bookings", controllers.GetStudentBookingsHandler)
+	// studentRoutes.POST("/preview-slot", controllers.PreviewSlotForPaymentHandler)
 
 }

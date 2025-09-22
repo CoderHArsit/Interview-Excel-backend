@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func GenerateWeeklySlots(expertID uint) []models.AvailabilitySlot {
+func GenerateWeeklySlots(expertID string) []models.AvailabilitySlot {
 	var slots []models.AvailabilitySlot
 	now := time.Now()
 

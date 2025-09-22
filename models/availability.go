@@ -7,18 +7,18 @@ import (
 )
 
 type AvailabilitySlot struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	ExpertID  uint      `gorm:"not null;index" json:"expert_id"`
-	Expert    Expert    `gorm:"foreignKey:ExpertID" json:"-"`
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	ExpertID string `gorm:"not null;index" json:"expert_id"` // references Expert.UserID
+	Expert   Expert `gorm:"foreignKey:ExpertID;references:UserID" json:"-"`
+
 	Date      time.Time `gorm:"not null;index" json:"date"`
 	StartTime time.Time `gorm:"not null" json:"start_time"`
 	EndTime   time.Time `gorm:"not null" json:"end_time"`
 	IsBooked  bool      `gorm:"default:false" json:"is_booked"`
-	StudentID *uint     `gorm:"index" json:"student_id,omitempty"` // ✅ Added field
+	StudentID *uint     `gorm:"index" json:"student_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
-
 type availabilitySlotRepo struct {
 	DB *gorm.DB
 }
@@ -33,14 +33,14 @@ func (r *availabilitySlotRepo) CreateAvailabilitySlot(availability []Availabilit
 }
 
 // Get all slots for an expert
-func (r *availabilitySlotRepo) GetAllByExpert(expertID uint) ([]AvailabilitySlot, error) {
+func (r *availabilitySlotRepo) GetAllByExpert(expertID string) ([]AvailabilitySlot, error) {
 	var slots []AvailabilitySlot
 	err := r.DB.Where("expert_id = ?", expertID).Find(&slots).Error
 	return slots, err
 }
 
 // Get all available (not booked) slots
-func (r *availabilitySlotRepo) GetAvailableByExpert(expertID uint) ([]AvailabilitySlot, error) {
+func (r *availabilitySlotRepo) GetAvailableByExpert(expertID string) ([]AvailabilitySlot, error) {
 	var slots []AvailabilitySlot
 	err := r.DB.Where("expert_id = ? AND is_booked = false AND date >= ?", expertID, time.Now()).
 		Order("date ASC, start_time ASC").
