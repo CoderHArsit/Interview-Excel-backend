@@ -23,7 +23,7 @@ func GenerateWeeklySlots(expertID string) []models.AvailabilitySlot {
 				Date:      currentDate,
 				StartTime: startTime,
 				EndTime:   endTime,
-				IsBooked:  false,
+				Status:    string(models.SlotAvailable),
 			})
 		}
 	}

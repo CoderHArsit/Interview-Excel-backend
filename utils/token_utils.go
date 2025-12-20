@@ -22,7 +22,6 @@ func getAccessSecret() []byte {
 	if secret == "" {
 		logger.Fatal("JWT_SECRET not set")
 	}
-	logger.Info("ccreation secret: ",secret)
 	return []byte(secret)
 }
 

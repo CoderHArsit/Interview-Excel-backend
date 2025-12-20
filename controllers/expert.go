@@ -95,31 +95,33 @@ func GetExpertProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, profile)
 
 }
-
 func UpdateExpertProfile(c *gin.Context) {
 	var request ExpertProfile
 
 	userID, exists := c.Get("user_uuid")
 	if !exists {
+		logger.Error("user_uuid not found in context")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
+
 	uuid, ok := userID.(string)
 	if !ok {
+		logger.Errorf("invalid user_uuid type: %T", userID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
 		return
 	}
 
 	// Bind JSON
 	if err := c.ShouldBindJSON(&request); err != nil {
-		logger.Error("error binding request: ", err)
+		logger.Errorf("failed to bind UpdateExpertProfile request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	tx := config.DB.Begin()
 	if tx.Error != nil {
-		logger.Error("error starting transaction: ", tx.Error)
+		logger.Errorf("failed to start transaction: %v", tx.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 		return
 	}
@@ -127,7 +129,6 @@ func UpdateExpertProfile(c *gin.Context) {
 	expertRepo := models.InitExpertRepo(tx)
 	userRepo := models.InitUserRepo(tx)
 
-	// Update expert-specific fields
 	expertRequest := &models.Expert{
 		Expertise:         request.Expertise,
 		ExperienceYears:   request.ExperienceYears,
@@ -135,28 +136,28 @@ func UpdateExpertProfile(c *gin.Context) {
 		DOB:               request.DOB,
 		ProfilePictureUrl: request.ProfilePictureUrl,
 		FeesPerSession:    request.FeesPerSession,
+		Achievement:       request.Achievements,
 	}
 
 	if err := expertRepo.UpdateWithTx(tx, &models.Expert{UserID: uuid}, expertRequest); err != nil {
 		tx.Rollback()
-		logger.Error("error updating expert: ", err)
+		logger.Errorf("failed to update expert profile (user_uuid=%s): %v", uuid, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update expert profile"})
 		return
 	}
 
-	// Update user basic info
 	if err := userRepo.UpdateByUserUUID(uuid, &models.User{
 		FullName: request.FullName,
 		Phone:    request.Phone,
 	}); err != nil {
 		tx.Rollback()
-		logger.Error("error updating user: ", err)
+		logger.Errorf("failed to update user profile (user_uuid=%s): %v", uuid, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user profile"})
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		logger.Error("failed to commit transaction: ", err)
+		logger.Errorf("failed to commit transaction (user_uuid=%s): %v", uuid, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction failed"})
 		return
 	}
@@ -190,7 +191,6 @@ func GenerateWeeklyAvailability(c *gin.Context) {
 	for _, d := range req.Days {
 		daySet[strings.ToLower(d)] = true
 	}
-	logger.Info("parsed gsargrrg", "req", req)
 	// Iterate over the week
 	for i := 0; i < 7; i++ {
 		currentDay := weekStart.AddDate(0, 0, i)
@@ -235,7 +235,7 @@ func GenerateWeeklyAvailability(c *gin.Context) {
 				Date:      currentDay,
 				StartTime: t,
 				EndTime:   t.Add(duration),
-				IsBooked:  false,
+				Status:    string(models.SlotAvailable),
 			}
 			slots = append(slots, slot)
 		}
@@ -289,4 +289,56 @@ func GetAllSlotsOfExpert(c *gin.Context) {
 		})
 	}
 	c.JSON(http.StatusOK, availableSlots)
+}
+
+func CancelSlotOfExpert(c *gin.Context) {
+	slotID := c.Param("slot_id")
+
+	userID, exists := c.Get("user_uuid")
+	if !exists {
+		logger.Error("user_uuid missing in context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	expertID := userID.(string)
+
+	var slot models.AvailabilitySlot
+
+	// Fetch slot
+	if err := config.DB.
+		Where("id = ? AND expert_id = ?", slotID, expertID).
+		First(&slot).Error; err != nil {
+
+		logger.Errorf("slot not found (slot_id=%s, expert_id=%s): %v", slotID, expertID, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Slot not found"})
+		return
+	}
+
+	// Business rules
+	if slot.Status == string(models.SlotBooked) {
+		logger.Warnf("attempt to cancel booked slot (slot_id=%d)", slot.ID)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Booked slot cannot be cancelled",
+		})
+		return
+	}
+
+	if slot.Status == string(models.SlotCancelled) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Slot already cancelled",
+		})
+		return
+	}
+
+	// Cancel slot
+	if err := config.DB.Model(&slot).
+		Update("status", string(models.SlotCancelled) ).Error; err != nil {
+
+		logger.Errorf("failed to cancel slot (slot_id=%d): %v", slot.ID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel slot"})
+		return
+	}
+
+	logger.Infof("slot cancelled successfully (slot_id=%d, expert_id=%s)", slot.ID, expertID)
+	c.JSON(http.StatusOK, gin.H{"message": "Slot cancelled successfully"})
 }

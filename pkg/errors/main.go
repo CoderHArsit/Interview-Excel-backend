@@ -1,9 +1,25 @@
 package errors
 
-import(
+import (
+	"fmt"
+	"path/filepath"
+	"runtime"
+
 	"github.com/sirupsen/logrus"
 )
+
 var logger = logrus.New()
+
+func init() {
+	logger.SetReportCaller(true)
+
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+		CallerPrettyfier: func(frame *runtime.Frame) (string, string) {
+			return frame.Function, fmt.Sprintf("%s:%d", filepath.Base(frame.File), frame.Line)
+		},
+	})
+}
 
 var (
 	Debug  = logger.Debug

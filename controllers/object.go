@@ -61,6 +61,8 @@ type ExpertProfile struct {
 	ExperienceYears    int       `json:"experience_years"`
 	ProfilePictureUrl  string    `json:"profile_picture_url"`
 	FeesPerSession     int       `json:"fees_per_session"`
+	Skills             string  `json:"skills"`
+	Achievements       string    `json:"achievements"`
 	Rating             float64   `json:"rating"` // if you added
 	TotalSessions      int       `json:"total_sessions"`
 	VerificationStatus string    `json:"verification_status"`

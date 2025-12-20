@@ -6,19 +6,30 @@ import (
 	"gorm.io/gorm"
 )
 
+type AvailabilitySlotStatus string
+
+const (
+	SlotAvailable AvailabilitySlotStatus = "AVAILABLE"
+	SlotBooked    AvailabilitySlotStatus = "BOOKED"
+	SlotCancelled AvailabilitySlotStatus = "CANCELLED"
+)
+
 type AvailabilitySlot struct {
 	ID       uint   `gorm:"primaryKey" json:"id"`
-	ExpertID string `gorm:"not null;index" json:"expert_id"` // references Expert.UserID
+	ExpertID string `gorm:"not null;index" json:"expert_id"` // Expert.UserID
 	Expert   Expert `gorm:"foreignKey:ExpertID;references:UserID" json:"-"`
 
 	Date      time.Time `gorm:"not null;index" json:"date"`
 	StartTime time.Time `gorm:"not null" json:"start_time"`
 	EndTime   time.Time `gorm:"not null" json:"end_time"`
-	IsBooked  bool      `gorm:"default:false" json:"is_booked"`
-	StudentID *uint     `gorm:"index" json:"student_id,omitempty"`
+
+	Status    string `gorm:"type:varchar(20);default:'available';index" json:"status"`
+	StudentID *uint  `gorm:"index" json:"student_id,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
 type availabilitySlotRepo struct {
 	DB *gorm.DB
 }
