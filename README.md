@@ -177,7 +177,7 @@ REFRESH_TOKEN_EXPIRY=7d
 ### 1️⃣ Clone repository
 
 ```bash
-git clone https://github.com/your-username/interviewexcel-backend-go.git
+git clone https://github.com/CoderHArsit/interviewexcel-backend-go.git
 cd interviewexcel-backend-go
 ```
 
