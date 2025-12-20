@@ -31,7 +31,7 @@ func BookSlot(c *gin.Context) {
 	}
 
 	// 2. Check if already booked
-	if slot.IsBooked {
+	if slot.Status == string(models.SlotBooked) {
 		c.JSON(http.StatusConflict, gin.H{"error": "Slot already booked"})
 		return
 	}

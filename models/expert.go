@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type Expert struct {
 	ID     uint   `gorm:"primaryKey" json:"id"`
 	UserID string `gorm:"uniqueIndex" json:"user_uuid"` // ✅ string identifier
@@ -22,6 +21,7 @@ type Expert struct {
 	ProfilePictureUrl string         `json:"profile_picture_url,omitempty"`
 	FeesPerSession    int            `json:"fees_per_session"`
 	City              string         `json:"city"`
+	Achievement       string         `json:"achievement"`
 	DOB               time.Time      `json:"dob"`
 
 	Rating             float64 `gorm:"default:0" json:"rating"`
