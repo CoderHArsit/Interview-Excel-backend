@@ -27,9 +27,6 @@ type StudentRepo struct {
 	db *gorm.DB
 }
 
-func InitStudentRepo(db *gorm.DB) *StudentRepo {
-	return &StudentRepo{db: db}
-}
 
 // Create a new student
 func (r *StudentRepo) Create(student *Student) error {

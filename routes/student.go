@@ -19,4 +19,5 @@ func RegisterStudentRoutes(r *gin.Engine) {
 	// studentRoutes.GET("/bookings", controllers.GetStudentBookingsHandler)
 	// studentRoutes.POST("/preview-slot", controllers.PreviewSlotForPaymentHandler)
 
+	studentRoutes.POST("/book-slot/:slot_id",controllers.BookSlotHandler)
 }

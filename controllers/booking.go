@@ -1,45 +1,44 @@
 package controllers
 
 import (
-	"interviewexcel-backend-go/config"
-	"interviewexcel-backend-go/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
+
+// Booking flow (what the function must guarantee)
+// Atomic requirements
+
+// Slot must exist
+
+// Slot must be available
+
+// Slot must be booked once
+
+// Google Meet link must be created
+
+// If any step fails → rollback
+
+// High-level flow
+// BEGIN TX
+//   ├─ Lock availability slot
+//   ├─ Validate slot availability
+//   ├─ Create Google Meet link
+//   ├─ Create booking record
+//   ├─ Mark slot as booked
+// COMMIT
 
 type BookSlotRequest struct {
 	SlotID uint `json:"slot_id" binding:"required"`
 	// In future: StudentID uint `json:"student_id"`
 }
 
-func BookSlot(c *gin.Context) {
-	var request BookSlotRequest
+func BookSlotHandler(c *gin.Context) {
+	slotID, _ := strconv.Atoi(c.Param("slot_id"))
 
-	if err := c.ShouldBindJSON(&request); err != nil {
+	if err := BookExpertSlot(c, uint(slotID)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	slotRepo := models.InitAvailabilitySlotRepo(config.DB)
-
-	// 1. Check if the slot exists
-	slot, err := slotRepo.GetByID(request.SlotID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Slot not found"})
-		return
-	}
-
-	// 2. Check if already booked
-	if slot.Status == string(models.SlotBooked) {
-		c.JSON(http.StatusConflict, gin.H{"error": "Slot already booked"})
-		return
-	}
-
-	// 3. Mark as booked
-	err = slotRepo.MarkAsBooked(request.SlotID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to book slot"})
 		return
 	}
 
