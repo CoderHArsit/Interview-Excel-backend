@@ -21,8 +21,8 @@ type User struct {
 	Role     string  `gorm:"not null" json:"role"` // "student" | "expert" | "admin"
 
 	// Relations
-	Student Student `gorm:"foreignKey:UserID;references:UserUUID" json:"student,omitempty"`
-	Expert  Expert  `gorm:"foreignKey:UserID;references:UserUUID" json:"expert,omitempty"`
+	Student *Student `gorm:"foreignKey:UserID;references:UserUUID" json:"student,omitempty"`
+	Expert  *Expert `gorm:"foreignKey:UserID;references:UserUUID" json:"expert,omitempty"`
 }
 type UserRepo struct {
 	db *gorm.DB
