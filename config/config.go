@@ -2,18 +2,19 @@ package config
 
 import (
 	"fmt"
-	"golang.org/x/oauth2/google"
 	"interviewexcel-backend-go/models"
 	"log"
 	"os"
 
+	"golang.org/x/oauth2/google"
+
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/razorpay/razorpay-go"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"github.com/razorpay/razorpay-go"
-
 )
 
 var RazorpayClient *razorpay.Client
@@ -43,14 +44,17 @@ func GoogleConfig() *oauth2.Config {
 }
 
 var DB *gorm.DB
-
 func InitDB() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	dbURI := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+	// Ensure logrus level allows SQL logs
+	logrus.SetLevel(logrus.InfoLevel)
+
+	dbURI := fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_USER"),
@@ -58,20 +62,22 @@ func InitDB() {
 		os.Getenv("DB_PASSWORD"),
 	)
 
-	db, err := gorm.Open(postgres.Open(dbURI), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dbURI), &gorm.Config{
+		Logger: NewGormLogger(), 
+	})
 	if err != nil {
 		log.Fatal("Error in connecting the DB: ", err)
 	}
 
-	// Perform auto-migration
-	err = db.AutoMigrate(models.GetMigrationModel()...)
-	if err != nil {
+	// Auto migration
+	if err := db.AutoMigrate(models.GetMigrationModel()...); err != nil {
 		log.Fatal("Migration failed: ", err)
 	}
 
 	DB = db
 	log.Println("Database connected successfully")
 }
+
 
 
 func InitRazorpay() {

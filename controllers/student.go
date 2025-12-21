@@ -8,7 +8,6 @@ import (
 	logger "interviewexcel-backend-go/pkg/errors"
 	"net/http"
 
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 )
@@ -64,95 +63,97 @@ func GetStudentProfile(c *gin.Context) {
 
 	// Merge response
 	resp := StudentProfile{
-		UserID:      uuid,
-		Role:        user.Role,
-		FullName:    user.FullName,
-		Email:       user.Email,
-		Phone:       safeString(user.Phone),
-		Bio:         student.Bio,
-		Sessions:    student.Sessions,
-		Points:      student.Points,
-		DateOfBirth: student.DateOfBirth,
-		City:        student.City,
-		AboutMe:     student.AboutMe,
-		Skills:      skills, // ✅ now proper []string
+		UserID:       uuid,
+		Role:         user.Role,
+		FullName:     user.FullName,
+		Email:        user.Email,
+		Phone:        safeString(user.Phone),
+		Bio:          student.Bio,
+		PreparingFor: student.PreparingFor,
+		Sessions:     student.Sessions,
+		Points:       student.Points,
+		DateOfBirth:  student.DateOfBirth,
+		City:         student.City,
+		AboutMe:      student.AboutMe,
+		Skills:       skills, 
 	}
 
 	c.JSON(http.StatusOK, resp)
 }
-
 func UpdateStudentProfile(c *gin.Context) {
-	var (
-		request StudentProfile
-	)
+	var request StudentProfile
 
 	userID, exists := c.Get("user_uuid")
 	if !exists {
-		logger.Error("User doesn't exist")
+		logger.Error("user not found in context")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	uuid, ok := userID.(string)
+	userUUID, ok := userID.(string)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
 		return
 	}
 
-	err := c.ShouldBindJSON(&request)
-	if err != nil {
-		logger.Error("error in binding Request: ", err)
+	if err := c.ShouldBindJSON(&request); err != nil {
+		logger.Error("error binding request: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	// start a transaction
 	tx := config.DB.Begin()
 	if tx.Error != nil {
-		logger.Error("error in starting transaction: ", err)
+		logger.Error("failed to start transaction: ", tx.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 		return
 	}
 
-	// use tx for repos
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	studentRepo := models.InitStudentRepo(tx)
 	userRepo := models.InitUserRepo(tx)
 
-	skillsJSON, _ := json.Marshal(request.Skills)
+	// -------- STUDENT UPDATE --------
 
-	studentRequest := &models.Student{
-		Bio:          request.Bio,
-		PreparingFor: request.PreparingFor,
-		DateOfBirth:  request.DateOfBirth,
-		City:         request.City,
-		AboutMe:      request.AboutMe,
-		Skills:       datatypes.JSON(skillsJSON), // ✅ direct cast
-	}
-
-	// first update student
-	err = studentRepo.UpdateByUserUUID(uuid, studentRequest)
+	skillsJSON, err := json.Marshal(request.Skills)
 	if err != nil {
 		tx.Rollback()
-		logger.Error("error in updating student: ", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update student profile"})
+		logger.Error("failed to marshal skills: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid skills format"})
 		return
 	}
 
-	// then update user
-	err = userRepo.UpdateByUserUUID(uuid, &models.User{
+	studentUpdates := map[string]interface{}{
+		"bio":           request.Bio,
+		"preparing_for": request.PreparingFor,
+		"date_of_birth": request.DateOfBirth,
+		"city":          request.City,
+		"about_me":      request.AboutMe,
+		"skills":        datatypes.JSON(skillsJSON),
+	}
+
+	if err := studentRepo.UpdateByUserUUID(userUUID, studentUpdates); err != nil {
+		tx.Rollback()
+		logger.Error("error updating student: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update student profile"})
+		return
+	}
+	if err := userRepo.UpdateByUserUUID(userUUID, &models.User{
 		FullName: request.FullName,
 		Phone:    &request.Phone,
-	})
-	if err != nil {
+	}); err != nil {
 		tx.Rollback()
-		logger.Error("error in updating user: ", err)
+		logger.Error("error updating user: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user profile"})
 		return
 	}
 
-	// commit if both succeeded
-	err = tx.Commit().Error
-	if err != nil {
+	if err := tx.Commit().Error; err != nil {
 		logger.Error("failed to commit transaction: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction failed"})
 		return
@@ -165,7 +166,7 @@ func GetAllExpertsHandler(c *gin.Context) {
 	var (
 		expertRepo = models.InitExpertRepo(config.DB)
 	)
-	experts, err := expertRepo.GetAll()
+	experts, err := expertRepo.GetAllExpertsWithUserDetails()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch experts"})
 		return

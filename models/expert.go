@@ -10,6 +10,7 @@ import (
 type Expert struct {
 	ID     uint   `gorm:"primaryKey" json:"id"`
 	UserID string `gorm:"uniqueIndex" json:"user_uuid"` // ✅ string identifier
+	User   *User  `gorm:"foreignKey:UserID;references:UserUUID" json:"user,omitempty"`
 
 	FullName          string         `json:"full_name"`
 	Bio               string         `json:"bio,omitempty"`
@@ -99,5 +100,13 @@ func (e *expertRepo) Delete(id uint64) error {
 func (r *expertRepo) GetAll() ([]Expert, error) {
 	var experts []Expert
 	err := r.DB.Find(&experts).Error
+	return experts, err
+}
+
+func (r *expertRepo) GetAllExpertsWithUserDetails() ([]Expert, error) {
+	var experts []Expert
+	err := r.DB.
+		Preload("User").
+		Find(&experts).Error
 	return experts, err
 }

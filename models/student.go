@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"gorm.io/datatypes"
@@ -45,11 +46,23 @@ func (r *StudentRepo) GetByUserUUID(uuid string) (*Student, error) {
 	return &student, nil
 }
 
-// Update student (by user UUID)
-func (r *StudentRepo) UpdateByUserUUID(uuid string, updates *Student) error {
-	return r.db.Model(&Student{}).
-		Where("user_id = ?", uuid).
-		Updates(updates).Error
+var ErrStudentNotFound = errors.New("student not found")
+
+func (r *StudentRepo) UpdateByUserUUID(userUUID string, updates map[string]interface{}) error{
+	result := r.db.
+		Model(&Student{}).
+		Where("user_id = ?", userUUID).
+		Updates(updates)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrStudentNotFound
+	}
+
+	return nil
 }
 
 // Delete student (by user UUID)

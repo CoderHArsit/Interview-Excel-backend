@@ -12,6 +12,7 @@ type IExpert interface {
 	UpdateWithTx(tx *gorm.DB, where *Expert, a *Expert) error
 	Delete(where uint64) error
 	GetAll() ([]Expert, error)
+    GetAllExpertsWithUserDetails() ([]Expert, error)
 }
 
 type IAvailabilitySlotRepo interface {
