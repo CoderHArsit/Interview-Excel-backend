@@ -40,6 +40,18 @@ type IStudent interface {
 	ListAll() ([]Student, error)
 }
 
+type ISession interface {
+	Create(session *Session) error
+	GetByUUID(sessionUUID string) (*Session, error)
+	GetByStudentUUID(studentUUID string) ([]Session, error)
+	GetByExpertUUID(expertUUID string) ([]Session, error)
+	GetUpcomingForUser(userUUID string) ([]Session, error)
+	ExistsForSlot(slotID uint) (bool, error)
+	UpdateStatus(sessionUUID string, status string) error
+	Cancel(sessionUUID string) error
+	MarkCompleted(sessionUUID string) error
+	Delete(sessionUUID string) error
+}
 type IUser interface {
 	InitUserRepo(db *gorm.DB) *UserRepo
 	Create(user *User) error

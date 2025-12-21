@@ -34,11 +34,6 @@ type availabilitySlotRepo struct {
 	DB *gorm.DB
 }
 
-func InitAvailabilitySlotRepo(db *gorm.DB) IAvailabilitySlotRepo {
-	return &availabilitySlotRepo{
-		DB: db,
-	}
-}
 func (r *availabilitySlotRepo) CreateAvailabilitySlot(availability []AvailabilitySlot) error {
 	return r.DB.Create(&availability).Error
 }
@@ -53,7 +48,7 @@ func (r *availabilitySlotRepo) GetAllByExpert(expertID string) ([]AvailabilitySl
 // Get all available (not booked) slots
 func (r *availabilitySlotRepo) GetAvailableByExpert(expertID string) ([]AvailabilitySlot, error) {
 	var slots []AvailabilitySlot
-	err := r.DB.Where("expert_id = ? AND is_booked = false AND date >= ?", expertID, time.Now()).
+	err := r.DB.Where("expert_id = ? AND is_booked = false AND start_time >= ?", expertID, time.Now()).
 		Order("date ASC, start_time ASC").
 		Find(&slots).Error
 	return slots, err
