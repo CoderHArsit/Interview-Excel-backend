@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	logger "interviewexcel-backend-go/pkg/errors"
@@ -31,18 +30,73 @@ import (
 // COMMIT
 
 type BookSlotRequest struct {
-	SlotID uint `json:"slot_id" binding:"required"`
+	SlotID        uint `json:"slot_id" binding:"required"`
+	AmountInPaise int  `json:"amount_in_paise" binding:"required"`
+
 	// In future: StudentID uint `json:"student_id"`
 }
 
-func BookSlotHandler(c *gin.Context) {
-	slotID, _ := strconv.Atoi(c.Param("slot_id"))
-
-	if err := BookExpertSlot(c, uint(slotID)); err != nil {
-		logger.Error("error in booking slot: ", err)
+func InitiateBookingHandler(c *gin.Context) {
+	var (
+		req BookSlotRequest
+	)
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		logger.Error("error in binding booking request: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Slot booked successfully"})
+	order, err := CreateRazorpayOrder(req.SlotID, req.AmountInPaise)
+	if err != nil {
+		logger.Error("error in creating razorpay order: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create payment order"})
+		return
+	}
+	c.JSON(http.StatusOK, order)
+}
+
+type ConfirmPaymentRequest struct {
+	SlotID            uint   `json:"slot_id" binding:"required"`
+	RazorpayOrderID   string `json:"razorpay_order_id" binding:"required"`
+	RazorpayPaymentID string `json:"razorpay_payment_id" binding:"required"`
+	RazorpaySignature string `json:"razorpay_signature" binding:"required"`
+}
+
+type ConfirmPaymentResponse struct {
+	SessionID uint `json:"session_id"`
+}
+
+func ConfirmPaymentHandler(c *gin.Context) {
+	var (
+		req ConfirmPaymentRequest
+	)
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		logger.Error("error in binding payment confirmation request: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ok := VerifyRazorpaySignature(req.RazorpayOrderID, req.RazorpayPaymentID, req.RazorpaySignature)
+	if !ok {
+		logger.Error("error in verifying razorpay signature")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment signature"})
+		return
+	}
+
+	err = BookExpertSlot(c, req.SlotID)
+	if err != nil {
+		logger.Error("error in booking slot after payment: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to book slot"})
+		return
+	}
+
+	// Sending session details to student in response
+	c.JSON(http.StatusOK,
+		ConfirmPaymentResponse{
+			SessionID: req.SlotID,
+		},
+	)
+
 }
