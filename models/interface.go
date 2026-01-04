@@ -28,6 +28,18 @@ type IAvailabilitySlotRepo interface {
 	GetBookedSlotsByExpert(expertID uint) ([]AvailabilitySlot, error)
 }
 
+type IWalletRepo interface {
+	GetByUserUUID(userUUID string) (*Wallet, error)
+	Create(wallet *Wallet) error
+	UpdateBalance(userUUID string, newBalanceInPaise int64) error
+}
+
+type IWalletTransactionRepo interface {
+	Create(tx *gorm.DB, wt *WalletTransaction) error
+	GetByWalletID(walletID uint) ([]WalletTransaction, error)
+	GetByReferenceID(referenceID string) ([]WalletTransaction, error)
+}
+
 type IPaymentRepo interface {
 	Create(payment *Payment) error
 	GetByOrderID(orderID string) (*Payment, error)

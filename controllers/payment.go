@@ -1,72 +1,71 @@
-// package controllers
-
-// import (
-// 	"fmt"
-// 	"interviewexcel-backend-go/config"
-// 	"interviewexcel-backend-go/models"
-// 	"net/http"
-// 	"os"
-
-// 	"github.com/gin-gonic/gin"
-// )
-
-
-// func CreateRazorpayOrderHandler(c *gin.Context) {
-// 	var req struct {
-// 		SlotID uint `json:"slot_id"`
-// 	}
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
-// 		return
-// 	}
-
-// 	availabilityRepo := models.InitAvailabilitySlotRepo(config.DB)
-// 	expertRepo := models.InitExpertRepo(config.DB)
-
-// 	slot, err := availabilityRepo.GetByID(req.SlotID)
-// 	if err != nil || slot.IsBooked {
-// 		c.JSON(http.StatusNotFound, gin.H{"error": "slot not available"})
-// 		return
-// 	}
-
-// 	expert, err := expertRepo.GetByID(uint64(slot.ExpertID))
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "expert not found"})
-// 		return
-// 	}
-
-// 	// Calculate amount
-// 	platformFee := int(0.10 * float64(expert.FeesPerSession))
-// 	totalAmount := expert.FeesPerSession + platformFee
-
-// 	// Razorpay needs amount in paise
-// 	amountInPaise := totalAmount * 100
-
-// 	// Create order params
-// 	data := map[string]interface{}{
-// 		"amount":          amountInPaise,
-// 		"currency":        "INR",
-// 		"receipt":         fmt.Sprintf("receipt_slot_%d", slot.ID),
-// 		"payment_capture": 1,
-// 		"notes": map[string]interface{}{
-// 			"slot_id":    slot.ID,
-// 			"expert_id":  expert.ID,
-// 			"student_id": c.GetUint("studentID"),
-// 		},
-// 	}
-
-// 	order, err := config.RazorpayClient.Order.Create(data, nil)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"order_id":     order["id"],
-// 		"amount":       totalAmount,
-// 		"currency":     "INR",
-// 		"razorpay_key": os.Getenv("RAZORPAY_KEY"),
-// 		"slot_id":      slot.ID,
-// 	})
-// }
 package controllers
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"interviewexcel-backend-go/config"
+	"os"
+)
+
+// Student clicks "Book"
+//    ↓
+// Backend creates Razorpay Order
+//    ↓
+// Frontend opens Razorpay Checkout
+//    ↓
+// Payment success
+//    ↓
+// Frontend sends payment_id + order_id + signature
+//    ↓
+// Backend verifies signature
+//    ↓
+// BEGIN TX
+//    ├─ Lock slot
+//    ├─ Create session
+//    ├─ Mark slot booked
+// COMMIT
+
+type RazorpayOrderResponse struct {
+	OrderID  string `json:"order_id"`
+	Amount   int    `json:"amount"`
+	Currency string `json:"currency"`
+	Key      string `json:"key"`
+}
+
+func CreateRazorpayOrder(slotID uint, amountInPaise int) (*RazorpayOrderResponse, error) {
+
+	data := map[string]interface{}{
+		"amount":   amountInPaise,
+		"currency": "INR",
+		"receipt":  fmt.Sprintf("slot_%d", slotID),
+	}
+
+	order, err := config.RazorpayClient.Order.Create(data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &RazorpayOrderResponse{
+		OrderID:  order["id"].(string),
+		Amount:   amountInPaise,
+		Currency: "INR",
+		Key:      os.Getenv("RAZORPAY_KEY"),
+	}
+
+	return resp, nil
+}
+
+func VerifyRazorpaySignature(orderID string,paymentID string,signature string,) bool {
+
+	secret := os.Getenv("RAZORPAY_SECRET")
+
+	data := orderID + "|" + paymentID
+
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(data))
+
+	expectedSignature := hex.EncodeToString(h.Sum(nil))
+	return expectedSignature == signature
+}
