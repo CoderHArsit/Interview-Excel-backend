@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	logger "interviewexcel-backend-go/pkg/errors"
 )
 
 type AvailabilitySlotStatus string
@@ -75,7 +76,16 @@ func (r *availabilitySlotRepo) Delete(id uint) error {
 func (r *availabilitySlotRepo) Update(slot *AvailabilitySlot) error {
 	return r.DB.Save(slot).Error
 }
+func (r *availabilitySlotRepo) UpdateWithTx(tx *gorm.DB, slot *AvailabilitySlot, where *AvailabilitySlot) error {
 
+	err := tx.Model(&AvailabilitySlot{}).
+		Where(where).Updates(slot).Error
+	if err != nil {
+		logger.Error("error in updating availability slot: ", err)
+		return err
+	}
+	return nil
+}
 func (r *availabilitySlotRepo) GetBookedByStudent(studentID uint) ([]AvailabilitySlot, error) {
 	var slots []AvailabilitySlot
 	err := r.DB.
