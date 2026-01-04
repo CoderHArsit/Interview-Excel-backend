@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	logger "interviewexcel-backend-go/pkg/errors"
 )
 
 // Booking flow (what the function must guarantee)
@@ -38,6 +39,7 @@ func BookSlotHandler(c *gin.Context) {
 	slotID, _ := strconv.Atoi(c.Param("slot_id"))
 
 	if err := BookExpertSlot(c, uint(slotID)); err != nil {
+		logger.Error("error in booking slot: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
