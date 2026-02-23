@@ -8,9 +8,12 @@ import (
 )
 
 type Expert struct {
-	ID     uint   `gorm:"primaryKey" json:"id"`
-	UserID string `gorm:"uniqueIndex" json:"user_uuid"` // ✅ string identifier
-	User   *User  `gorm:"foreignKey:UserID;references:UserUUID" json:"user,omitempty"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	UserID    string         `gorm:"uniqueIndex" json:"user_uuid"` // ✅ string identifier
+	User      *User          `gorm:"foreignKey:UserID;references:UserUUID" json:"user,omitempty"`
 
 	FullName          string         `json:"full_name"`
 	Bio               string         `json:"bio,omitempty"`

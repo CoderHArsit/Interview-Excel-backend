@@ -11,6 +11,7 @@ import (
 type Student struct {
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 	ID           uint           `gorm:"primaryKey" json:"id"`
 	UserID       string         `gorm:"uniqueIndex" json:"user_uuid"` // references User.UserUUID
 	Bio          string         `json:"bio,omitempty"`
@@ -26,7 +27,6 @@ type Student struct {
 type StudentRepo struct {
 	db *gorm.DB
 }
-
 
 // Create a new student
 func (r *StudentRepo) Create(student *Student) error {
@@ -45,7 +45,7 @@ func (r *StudentRepo) GetByUserUUID(uuid string) (*Student, error) {
 
 var ErrStudentNotFound = errors.New("student not found")
 
-func (r *StudentRepo) UpdateByUserUUID(userUUID string, updates map[string]interface{}) error{
+func (r *StudentRepo) UpdateByUserUUID(userUUID string, updates map[string]interface{}) error {
 	result := r.db.
 		Model(&Student{}).
 		Where("user_id = ?", userUUID).

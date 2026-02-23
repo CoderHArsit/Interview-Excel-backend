@@ -7,18 +7,20 @@ import (
 )
 
 type WalletTransaction struct {
-	ID       uint `gorm:"primaryKey"`
-	WalletID uint `gorm:"index;not null"`
+	ID        uint           `gorm:"primaryKey"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	WalletID  uint           `gorm:"index;not null"`
 
-	Wallet        *Wallet `gorm:"foreignKey:WalletID;references:ID" json:"wallet,omitempty"`
-	AmountInPaise int64   `gorm:"not null"` // +credit / -debit
-	Type          string  `gorm:"index"`    // credit | debit
-	Source        string  `gorm:"index"`    // session | refund | payout
-	ReferenceID   string  `gorm:"index"`    // session_uuid / payout_id
+	Wallet *Wallet `gorm:"foreignKey:WalletID;references:ID;constraint:OnDelete:CASCADE;"`
+
+	AmountInPaise int64
+	Type          string // credit | debit
+	Source        string // session | refund | payout
+	ReferenceID   string
 
 	Description string
-
-	CreatedAt time.Time
 }
 
 type walletTransactionRepo struct {

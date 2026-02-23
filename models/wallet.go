@@ -7,21 +7,20 @@ import (
 )
 
 type Wallet struct {
-	ID       uint   `gorm:"primaryKey"`
-	UserUUID string `gorm:"uniqueIndex;not null"` // expert user
-
-	User *User `gorm:"foreignKey:UserUUID;references:UserUUID" json:"user,omitempty"`
+	ID        uint           `gorm:"primaryKey"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	UserUUID  string         `gorm:"uniqueIndex;not null"`
 
 	BalanceInPaise int64 `gorm:"not null;default:0"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Transactions []WalletTransaction `gorm:"foreignKey:WalletID;references:ID"`
 }
 
 type walletRepo struct {
 	DB *gorm.DB
 }
-
 
 func (r *walletRepo) GetByUserUUID(userUUID string) (*Wallet, error) {
 	var wallet Wallet
