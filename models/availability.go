@@ -3,8 +3,9 @@ package models
 import (
 	"time"
 
-	"gorm.io/gorm"
 	logger "interviewexcel-backend-go/pkg/errors"
+
+	"gorm.io/gorm"
 )
 
 type AvailabilitySlotStatus string
@@ -16,9 +17,12 @@ const (
 )
 
 type AvailabilitySlot struct {
-	ID       uint   `gorm:"primaryKey" json:"id"`
-	ExpertID string `gorm:"not null;index" json:"expert_id"` // Expert.UserID
-	Expert   Expert `gorm:"foreignKey:ExpertID;references:UserID" json:"-"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	ExpertID  string         `gorm:"not null;index" json:"expert_id"` // Expert.UserID
+	Expert    Expert         `gorm:"foreignKey:ExpertID;references:UserID" json:"-"`
 
 	Date      time.Time `gorm:"not null;index" json:"date"`
 	StartTime time.Time `gorm:"not null" json:"start_time"`
@@ -26,9 +30,6 @@ type AvailabilitySlot struct {
 
 	Status    string `gorm:"type:varchar(20);default:'available';index" json:"status"`
 	StudentID *uint  `gorm:"index" json:"student_id,omitempty"`
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type availabilitySlotRepo struct {

@@ -8,10 +8,11 @@ import (
 )
 
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	UserUUID  string    `gorm:"uniqueIndex" json:"user_uuid"` // make it unique if used for relation
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	UserUUID  string         `gorm:"uniqueIndex" json:"user_uuid"` // make it unique if used for relation
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
 	FullName string  `gorm:"not null" json:"full_name"`
 	Email    string  `gorm:"not null;uniqueIndex" json:"email"`
@@ -22,7 +23,7 @@ type User struct {
 
 	// Relations
 	Student *Student `gorm:"foreignKey:UserID;references:UserUUID" json:"student,omitempty"`
-	Expert  *Expert `gorm:"foreignKey:UserID;references:UserUUID" json:"expert,omitempty"`
+	Expert  *Expert  `gorm:"foreignKey:UserID;references:UserUUID" json:"expert,omitempty"`
 }
 type UserRepo struct {
 	db *gorm.DB

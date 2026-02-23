@@ -7,8 +7,11 @@ import (
 )
 
 type Session struct {
-	ID          uint   `gorm:"primaryKey"`
-	SessionUUID string `gorm:"uniqueIndex"`
+	ID          uint `gorm:"primaryKey"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	SessionUUID string         `gorm:"uniqueIndex"`
 
 	ExpertUUID  string `gorm:"index;not null"`
 	StudentUUID string `gorm:"index;not null"`
@@ -21,11 +24,7 @@ type Session struct {
 	MeetLink string
 
 	Status string `gorm:"default:'scheduled';index"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
 }
-
 
 type SessionRepo struct {
 	db *gorm.DB
@@ -34,7 +33,6 @@ type SessionRepo struct {
 func (r *SessionRepo) Create(session *Session) error {
 	return r.db.Create(session).Error
 }
-
 
 func (r *SessionRepo) GetByUUID(sessionUUID string) (*Session, error) {
 	var session Session
