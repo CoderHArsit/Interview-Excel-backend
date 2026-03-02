@@ -7,23 +7,23 @@ import (
 )
 
 type Session struct {
-	ID          uint `gorm:"primaryKey"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
-	SessionUUID string         `gorm:"uniqueIndex"`
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	SessionUUID string         `gorm:"uniqueIndex" json:"session_uuid"`
 
-	ExpertUUID  string `gorm:"index;not null"`
-	StudentUUID string `gorm:"index;not null"`
+	ExpertUUID  string `gorm:"index;not null" json:"expert_uuid"`
+	StudentUUID string `gorm:"index;not null" json:"student_uuid"`
 
-	SlotID uint `gorm:"index"`
+	SlotID uint `gorm:"index" json:"slot_id"`
 
-	StartTime time.Time
-	EndTime   time.Time
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
 
-	MeetLink string
+	MeetLink string `json:"meet_link,omitempty"`
 
-	Status string `gorm:"default:'scheduled';index"`
+	Status string `gorm:"default:'scheduled';index" json:"status"`
 }
 
 type SessionRepo struct {
