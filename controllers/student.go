@@ -75,7 +75,7 @@ func GetStudentProfile(c *gin.Context) {
 		DateOfBirth:  student.DateOfBirth,
 		City:         student.City,
 		AboutMe:      student.AboutMe,
-		Skills:       skills, 
+		Skills:       skills,
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -190,3 +190,70 @@ func GetAvailableSlotsForExpertHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, slots)
 }
 
+//FIXME: Expert name is not Received in response
+func GetStudentSessions(c *gin.Context) {
+	sessionRepo := models.InitSessionRepo(config.DB)
+
+	userID, exists := c.Get("user_uuid")
+	if !exists {
+		logger.Error("User not exists in context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	uuid, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
+		return
+	}
+
+	sessions, err := sessionRepo.GetByStudentUUID(uuid)
+	if err != nil {
+		logger.Error("error in getting student sessions: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch sessions"})
+		return
+	}
+
+	expertRepo := models.InitExpertRepo(config.DB)
+	userRepo := models.InitUserRepo(config.DB)
+
+	var detailedSessions []StudentSessionResponse
+	for _, session := range sessions {
+		// Fetch expert details
+		expertDetails, err := expertRepo.GetWithTx(config.DB, &models.Expert{UserID: session.ExpertUUID})
+		expertName := "Unknown Expert"
+		expertPic := ""
+
+		if err == nil && expertDetails != nil {
+			expertName = expertDetails.FullName
+			expertPic = expertDetails.ProfilePictureUrl
+
+			// Fallback to user table for picture if not in expert profile
+			if expertPic == "" {
+				user, err := userRepo.GetByUUID(session.ExpertUUID)
+				if err == nil && user != nil {
+					expertPic = user.Picture
+				}
+			}
+		}
+
+		detailedSessions = append(detailedSessions, StudentSessionResponse{
+			ID:                session.ID,
+			SessionUUID:       session.SessionUUID,
+			ExpertUUID:        session.ExpertUUID,
+			ExpertName:        expertName,
+			ProfilePictureUrl: expertPic,
+			StartTime:         session.StartTime,
+			EndTime:           session.EndTime,
+			MeetLink:          session.MeetLink,
+			Status:            session.Status,
+		})
+	}
+
+	// If detailedSessions is nil, return an empty array instead of null
+	if detailedSessions == nil {
+		detailedSessions = []StudentSessionResponse{}
+	}
+
+	c.JSON(http.StatusOK, detailedSessions)
+}

@@ -85,3 +85,15 @@ type Slot struct {
 	EndTime   string    `json:"end_time"`
 	IsBooked  bool      `json:"is_booked"`
 }
+
+type StudentSessionResponse struct {
+	ID                uint      `json:"id"`
+	SessionUUID       string    `json:"session_uuid"`
+	ExpertUUID        string    `json:"expert_uuid"`
+	ExpertName        string    `json:"expert_name"`
+	ProfilePictureUrl string    `json:"profile_picture_url"`
+	StartTime         time.Time `json:"start_time"`
+	EndTime           time.Time `json:"end_time"`
+	MeetLink          string    `json:"meet_link,omitempty"`
+	Status            string    `json:"status"`
+}

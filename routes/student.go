@@ -21,4 +21,7 @@ func RegisterStudentRoutes(r *gin.Engine) {
 
 	studentRoutes.POST("/book-slot/:slot_id", controllers.InitiateBookingHandler)
 	studentRoutes.POST("/confirm-booking", controllers.ConfirmPaymentHandler)
+
+	// Fetch all sessions (upcoming or past) for the student
+	studentRoutes.GET("/sessions", controllers.GetStudentSessions)
 }
