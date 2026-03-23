@@ -65,7 +65,6 @@ func GenerateRefreshToken(userID string, role string) (string, error) {
 // ----- Token Validators -----
 func ValidateAccessToken(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		logger.Info("access secret: ",getAccessSecret())
 		return getAccessSecret(), nil
 	})
 	if err != nil {
@@ -101,10 +100,18 @@ func ValidateRefreshToken(tokenStr string) (*Claims, error) {
 
 // ----- Token Blacklist -----
 func AddTokenToBlacklist(token string, expiration time.Duration) error {
+	if config.RedisClient == nil {
+		return nil
+	}
+
 	return config.RedisClient.Set(config.Ctx, token, true, expiration).Err()
 }
 
 func IsTokenBlacklisted(token string) (bool, error) {
+	if config.RedisClient == nil {
+		return false, nil
+	}
+
 	exists, err := config.RedisClient.Exists(config.Ctx, token).Result()
 	if err != nil {
 		return false, err

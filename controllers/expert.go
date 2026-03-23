@@ -342,3 +342,124 @@ func CancelSlotOfExpert(c *gin.Context) {
 	logger.Infof("slot cancelled successfully (slot_id=%d, expert_id=%s)", slot.ID, expertID)
 	c.JSON(http.StatusOK, gin.H{"message": "Slot cancelled successfully"})
 }
+
+func GetExpertDashboard(c *gin.Context) {
+	var (
+		expertRepo       = models.InitExpertRepo(config.DB)
+		userRepo         = models.InitUserRepo(config.DB)
+		sessionRepo      = models.InitSessionRepo(config.DB)
+		availabilityRepo = models.InitAvailabilitySlotRepo(config.DB)
+		walletRepo       = models.InitWalletRepo(config.DB)
+	)
+
+	// 1. Get user UUID from auth context
+	userIDInterface, exists := c.Get("user_uuid")
+	if !exists {
+		logger.Error("user_uuid not found in context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	uuid, ok := userIDInterface.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user UUID"})
+		return
+	}
+
+	// 2. Fetch expert profile
+	expert, err := expertRepo.GetWithTx(config.DB, &models.Expert{UserID: uuid})
+	if err != nil {
+		logger.Error("error fetching expert for dashboard: ", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Expert not found"})
+		return
+	}
+
+	// 3. Fetch user details (for profile picture fallback)
+	user, err := userRepo.GetByUUID(uuid)
+	if err != nil {
+		logger.Error("error fetching user for dashboard: ", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	profilePic := expert.ProfilePictureUrl
+	if profilePic == "" {
+		profilePic = user.Picture
+	}
+
+	// 4. Fetch wallet for earnings
+	var earningsInPaise int64
+	wallet, err := walletRepo.GetByUserUUID(uuid)
+	if err == nil && wallet != nil {
+		earningsInPaise = wallet.BalanceInPaise
+	}
+
+	// 5. Fetch upcoming sessions
+	sessions, err := sessionRepo.GetUpcomingForUser(uuid)
+	if err != nil {
+		logger.Error("error fetching upcoming sessions: ", err)
+		sessions = []models.Session{}
+	}
+
+	// Enrich sessions with student names
+	var upcomingSessions []ExpertSessionResponse
+	for _, session := range sessions {
+		studentName := "Unknown Student"
+		studentUser, err := userRepo.GetByUUID(session.StudentUUID)
+		if err == nil && studentUser != nil {
+			studentName = studentUser.FullName
+		}
+
+		upcomingSessions = append(upcomingSessions, ExpertSessionResponse{
+			ID:          session.ID,
+			SessionUUID: session.SessionUUID,
+			StudentUUID: session.StudentUUID,
+			StudentName: studentName,
+			StartTime:   session.StartTime,
+			EndTime:     session.EndTime,
+			MeetLink:    session.MeetLink,
+			Status:      session.Status,
+		})
+	}
+
+	if upcomingSessions == nil {
+		upcomingSessions = []ExpertSessionResponse{}
+	}
+
+	// 6. Fetch slot overview counts
+	availableSlots, err := availabilityRepo.CountAvailableSlotsByExpert(uuid)
+	if err != nil {
+		logger.Error("error counting available slots: ", err)
+		availableSlots = 0
+	}
+
+	bookedSlots, err := availabilityRepo.CountBookedSlotsByExpertUUID(uuid)
+	if err != nil {
+		logger.Error("error counting booked slots: ", err)
+		bookedSlots = 0
+	}
+
+	// 7. Assemble response
+	response := ExpertDashboardResponse{
+		Expert: DashboardExpertInfo{
+			FullName:           user.FullName,
+			VerificationStatus: expert.VerificationStatus,
+			IsAvailable:        expert.IsAvailable,
+			ProfilePictureUrl:  profilePic,
+		},
+		Stats: DashboardStats{
+			TotalSessions:    expert.TotalSessions,
+			StudentsMentored: expert.StudentMentored,
+			Rating:           expert.Rating,
+			Earnings:         earningsInPaise,
+		},
+		UpcomingSessions: upcomingSessions,
+		SlotOverview: DashboardSlotOverview{
+			AvailableSlots: availableSlots,
+			BookedSlots:    bookedSlots,
+			SessionFee:     expert.FeesPerSession,
+		},
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+

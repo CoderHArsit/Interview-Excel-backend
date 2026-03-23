@@ -26,6 +26,8 @@ type IAvailabilitySlotRepo interface {
 	GetBookedByStudent(studentID uint) ([]AvailabilitySlot, error)
 	UpdateWithTx(tx *gorm.DB, slot *AvailabilitySlot, where *AvailabilitySlot) error
 	GetBookedSlotsByExpert(expertID uint) ([]AvailabilitySlot, error)
+	CountAvailableSlotsByExpert(expertID string) (int64, error)
+	CountBookedSlotsByExpertUUID(expertID string) (int64, error)
 }
 
 type IWalletRepo interface {

@@ -97,3 +97,44 @@ type StudentSessionResponse struct {
 	MeetLink          string    `json:"meet_link,omitempty"`
 	Status            string    `json:"status"`
 }
+
+// Expert Dashboard response types
+
+type ExpertDashboardResponse struct {
+	Expert           DashboardExpertInfo      `json:"expert"`
+	Stats            DashboardStats           `json:"stats"`
+	UpcomingSessions []ExpertSessionResponse  `json:"upcoming_sessions"`
+	SlotOverview     DashboardSlotOverview    `json:"slot_overview"`
+}
+
+type DashboardExpertInfo struct {
+	FullName           string `json:"full_name"`
+	VerificationStatus string `json:"verification_status"`
+	IsAvailable        bool   `json:"is_available"`
+	ProfilePictureUrl  string `json:"profile_picture_url"`
+}
+
+type DashboardStats struct {
+	TotalSessions   int     `json:"total_sessions"`
+	StudentsMentored int64  `json:"students_mentored"`
+	Rating          float64 `json:"rating"`
+	Earnings        int64   `json:"earnings"`
+}
+
+type DashboardSlotOverview struct {
+	AvailableSlots int64 `json:"available_slots"`
+	BookedSlots    int64 `json:"booked_slots"`
+	SessionFee     int   `json:"session_fee"`
+}
+
+type ExpertSessionResponse struct {
+	ID          uint      `json:"id"`
+	SessionUUID string    `json:"session_uuid"`
+	StudentUUID string    `json:"student_uuid"`
+	StudentName string    `json:"student_name"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	MeetLink    string    `json:"meet_link,omitempty"`
+	Status      string    `json:"status"`
+}
+

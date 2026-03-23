@@ -104,3 +104,19 @@ func (r *availabilitySlotRepo) GetBookedSlotsByExpert(expertID uint) ([]Availabi
 		Find(&slots).Error
 	return slots, err
 }
+
+func (r *availabilitySlotRepo) CountAvailableSlotsByExpert(expertID string) (int64, error) {
+	var count int64
+	err := r.DB.Model(&AvailabilitySlot{}).
+		Where("expert_id = ? AND status = ?", expertID, string(SlotAvailable)).
+		Count(&count).Error
+	return count, err
+}
+
+func (r *availabilitySlotRepo) CountBookedSlotsByExpertUUID(expertID string) (int64, error) {
+	var count int64
+	err := r.DB.Model(&AvailabilitySlot{}).
+		Where("expert_id = ? AND status = ?", expertID, string(SlotBooked)).
+		Count(&count).Error
+	return count, err
+}
