@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"interviewexcel-backend-go/models"
 	"log"
-	"os"
 
-	"golang.org/x/oauth2/google"
-
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/razorpay/razorpay-go"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -26,73 +23,69 @@ type Config struct {
 var AppConfig Config
 
 func GoogleConfig() *oauth2.Config {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
-	}
+	runtimeConfig := RuntimeConfig()
 	AppConfig.GoogleLoginConfig = oauth2.Config{
-		RedirectURL:  "http://localhost:8080/google_callback",
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  runtimeConfig.GoogleRedirectURL,
+		ClientID:     runtimeConfig.GoogleClientID,
+		ClientSecret: runtimeConfig.GoogleClientSecret,
 		Scopes: []string{"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile"},
 		Endpoint: google.Endpoint,
 	}
 
-	log.Println("This is correct")
 	return &AppConfig.GoogleLoginConfig
 }
 
 var DB *gorm.DB
-func InitDB() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
+func OpenDB() (*gorm.DB, error) {
 	// Ensure logrus level allows SQL logs
 	logrus.SetLevel(logrus.InfoLevel)
 
-	dbURI := fmt.Sprintf(
-		"host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PASSWORD"),
-	)
-
-	db, err := gorm.Open(postgres.Open(dbURI), &gorm.Config{
-		Logger: NewGormLogger(), 
+	db, err := gorm.Open(postgres.Open(DatabaseDSN()), &gorm.Config{
+		Logger: NewGormLogger(),
 	})
 	if err != nil {
-		log.Fatal("Error in connecting the DB: ", err)
+		return nil, fmt.Errorf("error connecting to the DB: %w", err)
 	}
 
-	// Auto migration
-	if err := db.AutoMigrate(models.GetMigrationModel()...); err != nil {
-		log.Fatal("Migration failed: ", err)
+	return db, nil
+}
+
+func InitDB() error {
+	db, err := OpenDB()
+	if err != nil {
+		return err
 	}
 
 	DB = db
 	log.Println("Database connected successfully")
+	return nil
 }
 
-
-
-func InitRazorpay() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file for Razorpay")
+func RunMigrations() error {
+	if DB == nil {
+		if err := InitDB(); err != nil {
+			return err
+		}
 	}
 
-	key := os.Getenv("RAZORPAY_KEY")
-	secret := os.Getenv("RAZORPAY_SECRET")
-
-	if key == "" || secret == "" {
-		log.Fatal("Missing Razorpay credentials in .env")
+	if err := DB.AutoMigrate(models.GetMigrationModel()...); err != nil {
+		return fmt.Errorf("migration failed: %w", err)
 	}
 
-	RazorpayClient = razorpay.NewClient(key, secret)
+	log.Println("Database migrations completed successfully")
+	return nil
+}
+
+func InitRazorpay() error {
+	runtimeConfig := RuntimeConfig()
+
+	if runtimeConfig.RazorpayKey == "" || runtimeConfig.RazorpaySecret == "" {
+		return fmt.Errorf("missing Razorpay credentials")
+	}
+
+	RazorpayClient = razorpay.NewClient(runtimeConfig.RazorpayKey, runtimeConfig.RazorpaySecret)
 	log.Println("Razorpay client initialized")
+	return nil
 }

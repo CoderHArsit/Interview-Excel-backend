@@ -12,6 +12,35 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
+const refreshTokenMaxAge = 7 * 24 * 60 * 60
+
+func setRefreshTokenCookie(c *gin.Context, refreshToken string) {
+	runtimeConfig := config.RuntimeConfig()
+
+	c.SetCookie(
+		"refresh_token",
+		refreshToken,
+		refreshTokenMaxAge,
+		"/",
+		runtimeConfig.CookieDomain,
+		runtimeConfig.CookieSecure,
+		true,
+	)
+}
+
+func persistRefreshToken(refreshToken string, value interface{}) error {
+	if config.RedisClient == nil {
+		return nil
+	}
+
+	return config.RedisClient.Set(
+		config.Ctx,
+		refreshToken,
+		value,
+		7*24*time.Hour,
+	).Err()
+}
+
 func Signup(c *gin.Context) {
 	var req SignUpRequest
 
@@ -83,25 +112,10 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(
-		"refresh_token", // cookie name
-		refreshToken,    // value
-		7*24*60*60,      // maxAge in seconds
-		"/",             // path: available to all endpoints
-		"localhost",     // domain: only hostname
-		false,           // secure: false for http in dev
-		true,            // httpOnly: true is fine
-	)
+	setRefreshTokenCookie(c, refreshToken)
 
 	// Save refresh token in Redis
-	err = config.RedisClient.Set(
-		config.Ctx,
-		refreshToken,   // key
-		user.ID,        // value
-		7*24*time.Hour, // expiration = 7 days
-	).Err()
-
-	if err != nil {
+	if err := persistRefreshToken(refreshToken, user.ID); err != nil {
 		logger.Errorf("Error saving refresh token to Redis: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save refresh token"})
 		return
@@ -206,15 +220,7 @@ func UserGoogleAuth(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(
-		"refresh_token", // cookie name
-		refreshToken,    // value
-		7*24*60*60,      // maxAge in seconds
-		"/",             // path: available to all endpoints
-		"localhost",     // domain: only hostname
-		false,           // secure: false for http in dev
-		true,            // httpOnly: true is fine
-	)
+	setRefreshTokenCookie(c, refreshToken)
 
 	// Respond
 	c.JSON(http.StatusOK, gin.H{
@@ -264,15 +270,7 @@ func UserSignIn(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(
-		"refresh_token", // cookie name
-		refreshToken,    // value
-		7*24*60*60,      // maxAge in seconds
-		"/",             // path: available to all endpoints
-		"localhost",     // domain: only hostname
-		false,           // secure: false for http in dev
-		true,            // httpOnly: true is fine
-	)
+	setRefreshTokenCookie(c, refreshToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
