@@ -27,6 +27,13 @@
 - Configure staging env vars in Render: `APP_ENV=staging`, `PORT`, `DATABASE_URL`, `REDIS_*`, `COOKIE_*`, `CORS_ALLOWED_ORIGINS`, `JWT_SECRET`, `GOOGLE_*`, `RAZORPAY_*`.
 - Create a deploy hook in Render and store it as `RENDER_STAGING_DEPLOY_HOOK_URL`.
 
+## Environment-Specific YAML Config
+- Non-secret defaults live in `config/{development,staging,production}.yaml`.
+- On startup, `config/runtime.go` loads `config/{APP_ENV}.yaml` and uses it as defaults.
+- Environment variables **always override** YAML values.
+- Secrets (`DATABASE_URL`, `JWT_SECRET`, etc.) are never in YAML files — set them via env vars only.
+- The YAML files are checked into git and copied into the Docker image at build time.
+
 ## AWS Production Setup
 - Create an ECR repository for this backend image.
 - Configure an App Runner service to pull the `production` tag from that ECR repository.

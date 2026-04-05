@@ -13,6 +13,10 @@ FROM gcr.io/distroless/base-debian12
 WORKDIR /app
 
 COPY --from=builder /interviewexcel-backend /app/interviewexcel-backend
+COPY --from=builder /app/config/*.yaml /app/config/
+
+ARG BUILD_ENV=staging
+LABEL environment=${BUILD_ENV}
 
 ENV PORT=8080
 

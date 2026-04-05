@@ -3,13 +3,29 @@ package config
 import (
 	"crypto/tls"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/joho/godotenv"
+	"gopkg.in/yaml.v3"
 )
+
+// yamlConfig mirrors the YAML config file structure.
+// Only non-secret, environment-specific defaults belong here.
+type yamlConfig struct {
+	AppEnv             string   `yaml:"app_env"`
+	Port               string   `yaml:"port"`
+	CookieDomain       string   `yaml:"cookie_domain"`
+	CookieSecure       bool     `yaml:"cookie_secure"`
+	CorsAllowedOrigins []string `yaml:"cors_allowed_origins"`
+	GoogleRedirectURL  string   `yaml:"google_redirect_url"`
+	RedisEnabled       bool     `yaml:"redis_enabled"`
+	RedisUseTLS        bool     `yaml:"redis_use_tls"`
+}
 
 type Runtime struct {
 	AppEnv             string
@@ -35,34 +51,84 @@ var (
 	runtimeOnce   sync.Once
 )
 
+// loadYAMLConfig reads config/{env}.yaml and returns the parsed defaults.
+// Returns a zero-value yamlConfig if the file does not exist (no error).
+func loadYAMLConfig(env string) yamlConfig {
+	var cfg yamlConfig
+
+	// Try multiple search paths so it works from project root and from
+	// inside Docker (/app/config/*.yaml).
+	candidates := []string{
+		filepath.Join("config", env+".yaml"),
+		filepath.Join("/app", "config", env+".yaml"),
+	}
+
+	for _, path := range candidates {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		if err := yaml.Unmarshal(data, &cfg); err != nil {
+			log.Printf("warning: failed to parse %s: %v", path, err)
+			return yamlConfig{}
+		}
+		log.Printf("loaded config from %s", path)
+		return cfg
+	}
+
+	log.Printf("no YAML config found for env %q (checked %v); using env vars only", env, candidates)
+	return cfg
+}
+
 func RuntimeConfig() Runtime {
 	runtimeOnce.Do(func() {
 		_ = godotenv.Load()
 
 		appEnv := getEnv("APP_ENV", "development")
-		port := getEnv("PORT", "8080")
+
+		// --- Load YAML defaults for this environment ---
+		yml := loadYAMLConfig(appEnv)
+
+		// --- Build runtime: env vars override YAML defaults ---
+		port := getEnv("PORT", yamlDefault(yml.Port, "8080"))
 
 		runtimeConfig = Runtime{
 			AppEnv:             appEnv,
 			Port:               port,
 			DatabaseURL:        strings.TrimSpace(os.Getenv("DATABASE_URL")),
-			CookieDomain:       strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
-			CookieSecure:       getEnvBool("COOKIE_SECURE", appEnv == "production"),
-			CorsAllowedOrigins: getEnvCSV("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3010"}),
+			CookieDomain:       getEnv("COOKIE_DOMAIN", yml.CookieDomain),
+			CookieSecure:       getEnvBool("COOKIE_SECURE", yml.CookieSecure),
+			CorsAllowedOrigins: getEnvCSV("CORS_ALLOWED_ORIGINS", yamlDefaultSlice(yml.CorsAllowedOrigins, []string{"http://localhost:3010"})),
 			GoogleClientID:     strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")),
 			GoogleClientSecret: strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_SECRET")),
-			GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", fmt.Sprintf("http://localhost:%s/google_callback", port)),
-			RedisEnabled:       resolveRedisEnabled(),
+			GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", yamlDefault(yml.GoogleRedirectURL, fmt.Sprintf("http://localhost:%s/google_callback", port))),
+			RedisEnabled:       resolveRedisEnabledWithDefault(yml.RedisEnabled),
 			RedisAddr:          strings.TrimSpace(os.Getenv("REDIS_ADDR")),
 			RedisPassword:      os.Getenv("REDIS_PASSWORD"),
 			RedisDB:            getEnvInt("REDIS_DB", 0),
-			RedisUseTLS:        getEnvBool("REDIS_USE_TLS", false),
+			RedisUseTLS:        getEnvBool("REDIS_USE_TLS", yml.RedisUseTLS),
 			RazorpayKey:        strings.TrimSpace(os.Getenv("RAZORPAY_KEY")),
 			RazorpaySecret:     strings.TrimSpace(os.Getenv("RAZORPAY_SECRET")),
 		}
 	})
 
 	return runtimeConfig
+}
+
+// yamlDefault returns the YAML value if non-empty, otherwise the hard-coded fallback.
+func yamlDefault(yamlVal, fallback string) string {
+	if yamlVal != "" {
+		return yamlVal
+	}
+	return fallback
+}
+
+// yamlDefaultSlice returns the YAML slice if non-empty, otherwise the hard-coded fallback.
+func yamlDefaultSlice(yamlVal, fallback []string) []string {
+	if len(yamlVal) > 0 {
+		return yamlVal
+	}
+	return fallback
 }
 
 func DatabaseDSN() string {
@@ -148,10 +214,14 @@ func getEnvCSV(key string, fallback []string) []string {
 	return origins
 }
 
-func resolveRedisEnabled() bool {
+func resolveRedisEnabledWithDefault(yamlDefault bool) bool {
 	value, ok := os.LookupEnv("REDIS_ENABLED")
 	if !ok {
-		return strings.TrimSpace(os.Getenv("REDIS_ADDR")) != ""
+		// If env var is not set, check REDIS_ADDR; if also empty, use YAML default.
+		if strings.TrimSpace(os.Getenv("REDIS_ADDR")) != "" {
+			return true
+		}
+		return yamlDefault
 	}
 
 	parsed, err := strconv.ParseBool(strings.TrimSpace(value))
