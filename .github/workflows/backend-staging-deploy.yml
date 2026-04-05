@@ -7,6 +7,10 @@ on:
     types:
       - completed
 
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     if: >
@@ -41,10 +45,14 @@ jobs:
         env:
           STAGING_HEALTHCHECK_URL: ${{ secrets.STAGING_HEALTHCHECK_URL }}
         run: |
-          for _ in $(seq 1 24); do
+          echo "⏳ Waiting for Render deploy to become healthy..."
+          for i in $(seq 1 36); do
             if curl -fsS "$STAGING_HEALTHCHECK_URL"; then
+              echo ""
+              echo "✅ Staging is healthy"
               exit 0
             fi
+            echo "  attempt $i/36 — retrying in 10s..."
             sleep 10
           done
           echo "Staging health check failed"
