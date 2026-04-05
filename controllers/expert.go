@@ -332,7 +332,7 @@ func CancelSlotOfExpert(c *gin.Context) {
 
 	// Cancel slot
 	if err := config.DB.Model(&slot).
-		Update("status", string(models.SlotCancelled) ).Error; err != nil {
+		Update("status", string(models.SlotCancelled)).Error; err != nil {
 
 		logger.Errorf("failed to cancel slot (slot_id=%d): %v", slot.ID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel slot"})
@@ -462,4 +462,3 @@ func GetExpertDashboard(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-

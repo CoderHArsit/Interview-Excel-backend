@@ -9,8 +9,8 @@ func GenerateWeeklySlots(expertID string) []models.AvailabilitySlot {
 	var slots []models.AvailabilitySlot
 	now := time.Now()
 
-	startHour := 9  // 9 AM
-	endHour := 21   // 9 PM (exclusive, generates 12 slots per day)
+	startHour := 9 // 9 AM
+	endHour := 21  // 9 PM (exclusive, generates 12 slots per day)
 
 	for day := 0; day < 7; day++ {
 		currentDate := now.AddDate(0, 0, day)
