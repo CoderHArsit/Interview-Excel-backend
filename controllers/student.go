@@ -190,7 +190,7 @@ func GetAvailableSlotsForExpertHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, slots)
 }
 
-//FIXME: Expert name is not Received in response
+// FIXME: Expert name is not Received in response
 func GetStudentSessions(c *gin.Context) {
 	sessionRepo := models.InitSessionRepo(config.DB)
 

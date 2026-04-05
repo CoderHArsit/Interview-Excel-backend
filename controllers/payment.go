@@ -57,7 +57,7 @@ func CreateRazorpayOrder(slotID uint, amountInPaise int) (*RazorpayOrderResponse
 	return resp, nil
 }
 
-func VerifyRazorpaySignature(orderID string,paymentID string,signature string,) bool {
+func VerifyRazorpaySignature(orderID string, paymentID string, signature string) bool {
 
 	secret := os.Getenv("RAZORPAY_SECRET")
 

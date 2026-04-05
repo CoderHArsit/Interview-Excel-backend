@@ -61,7 +61,7 @@ type ExpertProfile struct {
 	ExperienceYears    int       `json:"experience_years"`
 	ProfilePictureUrl  string    `json:"profile_picture_url"`
 	FeesPerSession     int       `json:"fees_per_session"`
-	Skills             string  `json:"skills"`
+	Skills             string    `json:"skills"`
 	Achievements       string    `json:"achievements"`
 	Rating             float64   `json:"rating"` // if you added
 	TotalSessions      int       `json:"total_sessions"`
@@ -101,10 +101,10 @@ type StudentSessionResponse struct {
 // Expert Dashboard response types
 
 type ExpertDashboardResponse struct {
-	Expert           DashboardExpertInfo      `json:"expert"`
-	Stats            DashboardStats           `json:"stats"`
-	UpcomingSessions []ExpertSessionResponse  `json:"upcoming_sessions"`
-	SlotOverview     DashboardSlotOverview    `json:"slot_overview"`
+	Expert           DashboardExpertInfo     `json:"expert"`
+	Stats            DashboardStats          `json:"stats"`
+	UpcomingSessions []ExpertSessionResponse `json:"upcoming_sessions"`
+	SlotOverview     DashboardSlotOverview   `json:"slot_overview"`
 }
 
 type DashboardExpertInfo struct {
@@ -115,10 +115,10 @@ type DashboardExpertInfo struct {
 }
 
 type DashboardStats struct {
-	TotalSessions   int     `json:"total_sessions"`
-	StudentsMentored int64  `json:"students_mentored"`
-	Rating          float64 `json:"rating"`
-	Earnings        int64   `json:"earnings"`
+	TotalSessions    int     `json:"total_sessions"`
+	StudentsMentored int64   `json:"students_mentored"`
+	Rating           float64 `json:"rating"`
+	Earnings         int64   `json:"earnings"`
 }
 
 type DashboardSlotOverview struct {
@@ -137,4 +137,3 @@ type ExpertSessionResponse struct {
 	MeetLink    string    `json:"meet_link,omitempty"`
 	Status      string    `json:"status"`
 }
-
